@@ -6,11 +6,13 @@ package crawler;
 
 import crawler.exception.ContentFetchException;
 import crawler.exception.PageExceedSizeException;
+import crawler.exception.ParseException;
 import multithread.UrlIdServer;
 import multithread.WebUrlQueues;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import parser.HtmlParseData;
 import parser.Parser;
 import parser.ParseData;
 
@@ -20,6 +22,8 @@ import url.WebURL;
 
 import java.util.List;
 import java.util.ArrayList;
+
+
 
 import multithread.Frontier;
 
@@ -41,8 +45,8 @@ public class WebCrawler implements Runnable{
      * reference to the controller can be used for getting configurations of the
      * current crawl or adding new seeds during runtime.
      */
-    //protected SimpleController myController;
-    protected Controller myController;
+    protected SimpleController myController;
+    //protected Controller myController;
 
     /**
      * The thread within which this crawler instance is running.
@@ -68,8 +72,9 @@ public class WebCrawler implements Runnable{
     /**
      * The Frontier object that manages the crawl queue.
      */
-    //private WebUrlQueues frontier;
-    private Frontier frontier;
+
+    private WebUrlQueues frontier;
+    //private Frontier frontier;
 
     /**
      * Is the current crawler instance waiting for new URLs? This field is
@@ -89,7 +94,7 @@ public class WebCrawler implements Runnable{
      * @throws IllegalAccessException
      * @throws InstantiationException
      */
-    public void init(int id, /*SimpleController*/Controller  crawlController)
+    public void init(int id, /*SimpleController*/SimpleController  crawlController)
             throws InstantiationException, IllegalAccessException {
         this.myId = id;
         this.pageFetcher = crawlController.getPageFetcher();
@@ -110,7 +115,7 @@ public class WebCrawler implements Runnable{
         return myId;
     }
 
-    public Controller getMyController() {
+    public SimpleController getMyController() {
         return myController;
     }
 
@@ -219,7 +224,7 @@ public class WebCrawler implements Runnable{
     public void run() {
         onStart();
         while (true) {
-            List<WebURL> assignedURLs = new ArrayList<>(10);           //get next 50 urls
+            List<WebURL> assignedURLs = new ArrayList<>(10);           //get next 10 urls
             isWaitingForNewURLs = true;
             frontier.getNextURLs(10, assignedURLs);
             if (assignedURLs.isEmpty()) {
@@ -278,11 +283,13 @@ public class WebCrawler implements Runnable{
      * (see definition at http://www.robotstxt.org/faq/what.html).  Thus URLs that
      * return false from this method will not be subject to robots.txt filtering.
      *
-     * @param url the URL of the page under consideration
+     * @param page the page under consideration
      * @return true if outgoing links from this page should be added to the queue.
      */
-    protected boolean shouldFollowLinksIn(WebURL url) {
-        return true;
+    protected boolean shouldFollowLinksIn(Page page) {
+        ParseData parseData= page.getParseData();
+        return parseData.isCharacter();
+        //return true;
     }
 
     /**
@@ -295,9 +302,9 @@ public class WebCrawler implements Runnable{
     public void visit(Page page) {
         // Do nothing by default
         // Sub-classed should override this to add their custom functionality
-        WebURL weburl = page.getWebURL();
+        /*WebURL weburl = page.getWebURL();
         System.out.println(weburl.getURL());
-        System.out.println(weburl.getAnchor()+" "+weburl.getDepth());
+        System.out.println(weburl.getAnchor()+" "+weburl.getDepth());*/
     }
 
     private void processPage(WebURL curURL){
@@ -385,7 +392,9 @@ public class WebCrawler implements Runnable{
                         logger.debug("Redirect page: {} has already been seen", curURL);
                         return;
                     }
-                    curURL.setURL(fetchResult.getFetchedUrl());                   //update the url
+                    if(!(fetchResult.getFetchedUrl()==null)) {
+                        curURL.setURL(fetchResult.getFetchedUrl());                   //update the url
+                    }
                     curURL.setDocid(urlIdServer.getNewUrlID(fetchResult.getFetchedUrl()));
                 }
 
@@ -400,10 +409,14 @@ public class WebCrawler implements Runnable{
                                     "({}), at URL: {}",
                             myController.getConfig().getMaxDownloadSize(), curURL.getURL());
                 }
+                //System.out.println(page.toString());
+
 
                 parser.parse(page, curURL.getURL());
 
-                if (shouldFollowLinksIn(page.getWebURL())) {
+                if (shouldFollowLinksIn(page)) {
+                    System.out.println(page.getWebURL().getURL());
+                    System.out.println(page.getWebURL().getAnchor());
                     ParseData parseData = page.getParseData();
                     List<WebURL> toSchedule = new ArrayList<>();
                     int maxCrawlDepth = myController.getConfig().getMaxDepthOfCrawling();
@@ -446,8 +459,8 @@ public class WebCrawler implements Runnable{
                 visit(page);
         } catch (PageExceedSizeException e) {
             onPageBiggerThanMaxSize(curURL.getURL(), e.getPageSize());
-        /*} catch (ParseException pe) {
-            onParseError(curURL);*/
+        } catch (ParseException pe) {
+            onParseError(curURL);
         } catch (ContentFetchException cfe) {
             onContentFetchError(curURL);
         } catch (Exception e) {

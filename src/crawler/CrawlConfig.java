@@ -124,17 +124,17 @@ public class CrawlConfig {
     /**
      * Wait this long before checking the status of the worker threads.
      */
-    private int threadMonitoringDelaySeconds = 10;
+    private int threadMonitoringDelaySeconds = 1;
 
     /**
      * Wait this long to verify the craweler threads are finished working.
      */
-    private int threadShutdownDelaySeconds = 10;
+    private int threadShutdownDelaySeconds = 1;
 
     /**
      * Wait this long in seconds before launching cleanup.
      */
-    private int cleanupDelaySeconds = 10;
+    private int cleanupDelaySeconds = 1;
 
     /**
      * If crawler should run behind a proxy, this parameter can be used for

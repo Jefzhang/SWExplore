@@ -280,5 +280,10 @@ public class Page {
         return truncated;
     }
 
+    @Override
+    public String toString(){
+        return new String(this.contentData);
+    }
+
 
 }

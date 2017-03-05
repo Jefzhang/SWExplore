@@ -10,6 +10,9 @@ public interface ParseData {
     Set<WebURL> getOutgoingUrls();
 
     void setOutgoingUrls(Set<WebURL> outgoingUrls);
+    boolean isCharacter();
+
+
 
     @Override
     String toString();

@@ -11,6 +11,7 @@ public class HtmlParseData implements ParseData {
     private String text;
     private String title;
     private Map<String, String> metaTags;
+    private boolean isCharacter = false;
 
     private Set<WebURL> outgoingUrls;
 
@@ -44,6 +45,15 @@ public class HtmlParseData implements ParseData {
 
     public void setMetaTags(Map<String, String> metaTags) {
         this.metaTags = metaTags;
+    }
+
+    public void setIsCharacter(boolean isCharacter){
+        this.isCharacter = isCharacter;
+    }
+
+    @Override
+    public boolean isCharacter(){
+        return this.isCharacter;
     }
 
     @Override

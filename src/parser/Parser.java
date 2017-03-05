@@ -3,8 +3,10 @@ package parser;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+//import java.text.ParseException;
 import java.util.HashSet;
 import java.util.Set;
+import crawler.exception.ParseException;
 
 import org.apache.tika.language.LanguageIdentifier;
 import org.apache.tika.metadata.DublinCore;
@@ -42,15 +44,17 @@ public class Parser extends Configurable{
      * @param page
      * @param contextURL url
      */
-    public void parse(Page page, String contextURL)
+    public void parse(Page page, String contextURL) throws ParseException
     {
             Metadata metadata = new Metadata();
             HtmlContentHandler contentHandler = new HtmlContentHandler();
             try (InputStream inputStream = new ByteArrayInputStream(page.getContentData())) {
                 htmlParser.parse(inputStream, contentHandler, metadata, parseContext);
             } catch (Exception e) {
+
                 logger.error("{}, while parsing: {}", e.getMessage(), page.getWebURL().getURL());
-                //throw new ParseException();
+                //logger.error("type of exception:{}",e.toString());
+                throw new ParseException();
             }
             if (page.getContentCharset() == null) {
                 page.setContentCharset(metadata.get("Content-Encoding"));
@@ -71,39 +75,44 @@ public class Parser extends Configurable{
                 contextURL = baseURL;
             }
 
-            int urlCount = 0;
+            boolean character = isCharacter(contentHandler);
+            parseData.setIsCharacter(character);
 
-            //Select outgoing urls
-            for (UrlTagPair urlAnchorPair : contentHandler.getOutgoingUrls()) {
+            if(character) {
 
-                String href = urlAnchorPair.getHref();
-                if ((href == null) || href.trim().isEmpty()) {
-                    continue;
-                }
+                int urlCount = 0;
+
+                //Select outgoing urls
+                for (UrlTagPair urlAnchorPair : contentHandler.getOutgoingUrls()) {
+
+                    String href = urlAnchorPair.getHref();
+                    if ((href == null) || href.trim().isEmpty()) {
+                        continue;
+                    }
 
 
-
-                //String hrefLoweredCase = href.trim().toLowerCase();
-                String url = URLnormlization.getCanonicalURL(href, contextURL);
-                String hrefLoweredCase = url.trim().toLowerCase();
-                //url = url.trim().toLowerCase();
-                //System.out.println(url);
-                if (Util.isRelatedPage(hrefLoweredCase)){
-                    //String url = URLnormlization.getCanonicalURL(href, contextURL);
-                    if (url != null) {
-                        WebURL webURL = new WebURL();
-                        webURL.setURL(url);
-                        webURL.setTag(urlAnchorPair.getTag());
-                        webURL.setAnchor(urlAnchorPair.getAnchor());
-                        outgoingUrls.add(webURL);
-                        urlCount++;
-                        if (urlCount > config.getMaxOutgoingLinksToFollow()) {
-                            break;
+                    //String hrefLoweredCase = href.trim().toLowerCase();
+                    String url = URLnormlization.getCanonicalURL(href, contextURL);
+                    String hrefLoweredCase = url.trim().toLowerCase();
+                    //url = url.trim().toLowerCase();
+                    //System.out.println(url);
+                    if (Util.isRelatedPage(hrefLoweredCase)) {
+                        //String url = URLnormlization.getCanonicalURL(href, contextURL);
+                        if (url != null) {
+                            WebURL webURL = new WebURL();
+                            webURL.setURL(url);
+                            webURL.setTag(urlAnchorPair.getTag());
+                            webURL.setAnchor(urlAnchorPair.getAnchor());
+                            outgoingUrls.add(webURL);
+                            urlCount++;
+                            if (urlCount > config.getMaxOutgoingLinksToFollow()) {
+                                break;
+                            }
                         }
                     }
                 }
+                parseData.setOutgoingUrls(outgoingUrls);
             }
-            parseData.setOutgoingUrls(outgoingUrls);
 
             try {
                 if (page.getContentCharset() == null) {
@@ -118,4 +127,17 @@ public class Parser extends Configurable{
                // throw new ParseException();
             }
         }
+
+    public boolean isCharacter(HtmlContentHandler handler){
+        int count = 0;
+        if(handler.DoeshaveBiography()){
+            count +=3;
+            if(handler.DoeshavePersonality()){
+                count +=1;
+            }
+        }
+        if(count>=4) return true;
+        if((count>=3)&&(Math.random()>=0.05)) return true;
+        else return false;
+    }
 }

@@ -199,7 +199,7 @@ public class Controller extends Configurable{
                 T crawler = crawlerFactory.newInstance();
                 Thread thread = new Thread(crawler, "Crawler " + i);
                 crawler.setThread(thread);
-                crawler.init(i, this);
+                //crawler.init(i, this);
                 thread.start();
                 crawlers.add(crawler);
                 threads.add(thread);
@@ -228,7 +228,7 @@ public class Controller extends Configurable{
                                             threads.remove(i);
                                             threads.add(i, thread);
                                             crawler.setThread(thread);
-                                            crawler.init(i + 1, controller);
+                                            //crawler.init(i + 1, controller);
                                             thread.start();
                                             crawlers.remove(i);
                                             crawlers.add(i, crawler);
@@ -527,7 +527,9 @@ public class Controller extends Configurable{
         PageFetcher pageFetcher = new PageFetcher(config);
         Controller controller = new Controller(config, pageFetcher);
 
-        controller.addSeed("http://starwars.wikia.com/wiki/Ewok_Jerky");
+        controller.addSeed("http://starwars.wikia.com/wiki/Yoda");
+        controller.addSeed("http://starwars.wikia.com/wiki/Anakin_Skywalker");
+        controller.addSeed("http://starwars.wikia.com/wiki/Qui-Gon_Jinn");
         //controller.addSeed("http://www.ics.uci.edu/~welling/");
         //controller.addSeed("http://www.ics.uci.edu/");
 
