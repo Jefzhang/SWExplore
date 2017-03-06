@@ -59,6 +59,7 @@ public class Parser extends Configurable{
             if (page.getContentCharset() == null) {
                 page.setContentCharset(metadata.get("Content-Encoding"));
             }
+            page.getWebURL().setAnchor(contentHandler.getWebTitle());
             HtmlParseData parseData = new HtmlParseData();
             parseData.setText(contentHandler.getBodyText().trim());
             parseData.setTitle(metadata.get(DublinCore.TITLE));
@@ -130,12 +131,22 @@ public class Parser extends Configurable{
 
     public boolean isCharacter(HtmlContentHandler handler){
         int count = 0;
-        if(handler.DoeshaveBiography()){
+        /*if(handler.DoeshaveBiography()){
             count +=3;
             if(handler.DoeshavePersonality()){
                 count +=1;
             }
         }
+        if(count>=4) return true;
+        if((count>=3)&&(Math.random()>=0.05)) return true;
+        else return false;*/
+        String bodytext = handler.getBodyText();
+        //System.out.println(bodytext);
+        boolean hasBiography = bodytext.matches("(.*)Biographical information(.*)");
+        boolean hasPersonality = bodytext.matches("(.*)Personality and traits(.*)");
+        if(hasBiography) count+=3;
+        if(hasPersonality) count+=1;
+        System.out.println(count);
         if(count>=4) return true;
         if((count>=3)&&(Math.random()>=0.05)) return true;
         else return false;

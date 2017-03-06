@@ -527,7 +527,6 @@ public class Controller extends Configurable{
         PageFetcher pageFetcher = new PageFetcher(config);
         Controller controller = new Controller(config, pageFetcher);
 
-        controller.addSeed("http://starwars.wikia.com/wiki/Yoda");
         controller.addSeed("http://starwars.wikia.com/wiki/Anakin_Skywalker");
         controller.addSeed("http://starwars.wikia.com/wiki/Qui-Gon_Jinn");
         //controller.addSeed("http://www.ics.uci.edu/~welling/");

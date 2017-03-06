@@ -195,7 +195,7 @@ public class WebURL implements Serializable{
 
     @Override
     public String toString() {
-        return url;
+        return this.anchor+": "+this.depth+"\n";
     }
 
 }

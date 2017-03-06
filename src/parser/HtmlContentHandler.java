@@ -23,6 +23,7 @@ public class HtmlContentHandler extends DefaultHandler{
         META,
         BODY,
         H2,
+        H1,
         SCRIPT
     }
 
@@ -45,10 +46,11 @@ public class HtmlContentHandler extends DefaultHandler{
     private String metaRefresh;
     private String metaLocation;
     private final Map<String, String> metaTags = new HashMap<>();
-
+    private String webTitle;
     private boolean isWithinBodyElement;
     private boolean isWithinScript;
     private boolean isWithh2;
+    private boolean isWithinh1;
     private boolean hasBiography;
     private boolean hasPersonality;
 
@@ -63,6 +65,7 @@ public class HtmlContentHandler extends DefaultHandler{
     public HtmlContentHandler() {
         isWithinBodyElement = false;
         isWithinScript = false;
+        isWithinh1 = false;
         isWithh2 = false;
         hasBiography = false;
         hasPersonality = false;
@@ -93,65 +96,22 @@ public class HtmlContentHandler extends DefaultHandler{
             if (isWithinBodyElement && !isWithinScript) {
                 String href = attributes.getValue("href");
                 if (href != null) {
-                    anchorFlag = true;
+                    //anchorFlag = true;
                     addToOutgoingUrls(href, localName);
                 }
             }
         }else if(element == Element.BODY)
                 isWithinBodyElement = true;
-        else if(element == Element.H2)
-                isWithh2 = true;
+        //else if(element == Element.H2)
+          //      isWithh2 = true;
         else if(element == Element.SCRIPT)
-
                 isWithinScript = true;
+        else if(element== Element.H1) {
+            isWithinh1 = true;
+            anchorFlag = true;
+        }
 
     }
-       /* else if (element == Element.IMG) {
-            String imgSrc = attributes.getValue("src");
-            if (imgSrc != null) {
-                addToOutgoingUrls(imgSrc, localName);
-
-            }
-        } else if ((element == Element.IFRAME) || (element == Element.FRAME) ||
-                (element == Element.EMBED) || (element == Element.SCRIPT)) {
-            String src = attributes.getValue("src");
-            if (src != null) {
-                addToOutgoingUrls(src, localName);
-
-            }
-        } else if (element == Element.BASE) {
-            if (base != null) { // We only consider the first occurrence of the Base element.
-                String href = attributes.getValue("href");
-                if (href != null) {
-                    base = href;
-                }
-            }
-        } else if (element == Element.META) {
-            String equiv = attributes.getValue("http-equiv");
-            if (equiv == null) { // This condition covers several cases of XHTML meta
-                equiv = attributes.getValue("name");
-            }
-
-            String content = attributes.getValue("content");
-            if ((equiv != null) && (content != null)) {
-                equiv = equiv.toLowerCase();
-                metaTags.put(equiv, content);
-
-                // http-equiv="refresh" content="0;URL=http://foo.bar/..."
-                if ("refresh".equals(equiv) && (metaRefresh == null)) {
-                    int pos = content.toLowerCase().indexOf("url=");
-                    if (pos != -1) {
-                        metaRefresh = content.substring(pos + 4);
-                        addToOutgoingUrls(metaRefresh, localName);
-                    }
-                }
-
-                // http-equiv="location" content="http://foo.bar/..."
-                if ("location".equals(equiv) && (metaLocation == null)) {
-                    metaLocation = content;
-                    addToOutgoingUrls(metaLocation, localName);
-                }
-            }*/
 
     private void addToOutgoingUrls(String href, String tag) {
         curUrl = new UrlTagPair();
@@ -164,8 +124,8 @@ public class HtmlContentHandler extends DefaultHandler{
     public void endElement(String uri, String localName, String qName){
         Element element = HtmlFactory.getElement(localName);
             if(element == Element.A){
-                anchorFlag = false;
-                if (curUrl != null) {
+                //anchorFlag = false;
+                /*if (curUrl != null) {
                     String anchor =
                             anchorText.toString().replaceAll("\n", " ").replaceAll("\t", " ").trim();
                     if (!anchor.isEmpty()) {
@@ -176,14 +136,23 @@ public class HtmlContentHandler extends DefaultHandler{
                         curUrl.setAnchor(anchor);
                     }
                     anchorText.delete(0, anchorText.length());
-                }
+                }*/
                 curUrl = null;}
-            else if (element==Element.BODY)
-                isWithinBodyElement = false;
+          //  else if (element==Element.BODY)
+            //    isWithinBodyElement = false;
             else if (element==Element.H2)
                 isWithh2 = false;
             else if (element==Element.SCRIPT)
                 isWithinScript = false;
+            else if (element==Element.H1) {
+                isWithinh1 = false;
+                anchorFlag = false;
+                String name = anchorText.toString().replaceAll("\n", " ").replaceAll("\t", " ").trim();
+                if(!name.isEmpty()){
+                    this.webTitle = name;
+                }
+                else this.webTitle = null;
+            }
 
     }
 
@@ -197,15 +166,15 @@ public class HtmlContentHandler extends DefaultHandler{
             if (anchorFlag) {
                 anchorText.append(new String(ch, start, length));
             }
-            if(isWithh2){
+            /*if(isWithh2){
                 if (new String(ch).contains("Biography")) hasBiography = true;
                 if (new String(ch).contains("Personality")) hasPersonality = true;
-            }
+            }*/
         }
     }
 
     public String getBodyText() {
-        return bodyText.toString();
+        return bodyText.toString().replaceAll("\n", " ").replaceAll("\t", " ").trim();
     }
 
     public List<UrlTagPair> getOutgoingUrls() {
@@ -214,6 +183,10 @@ public class HtmlContentHandler extends DefaultHandler{
 
     public String getBaseUrl() {
         return base;
+    }
+
+    public String getWebTitle(){
+        return this.webTitle;
     }
 
     public boolean DoeshaveBiography(){

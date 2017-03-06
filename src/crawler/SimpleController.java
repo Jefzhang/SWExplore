@@ -10,7 +10,9 @@ import url.URLnormlization;
 import url.WebURL;
 import util.IO;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,7 +28,7 @@ public class SimpleController extends Configurable{
     static final Logger logger = LoggerFactory.getLogger(SimpleController.class);
     protected boolean finished;
 
-    protected List<Object> crawlersLocalData = new ArrayList<>();
+    protected ArrayList<WebURL> crawlersLocalData = new ArrayList<>();
 
     /**
      * Is the crawling session set to 'shutdown'. Crawler threads monitor this
@@ -207,21 +209,24 @@ public class SimpleController extends Configurable{
                                         frontier.finish();
                                         for (T crawler : crawlers) {
                                             crawler.onBeforeExit();
-                                            crawlersLocalData.add(crawler.getMyLocalData());
+                                            crawlersLocalData.addAll(crawler.getMyLocalData());
                                         }
+                                        FileWriter file = new FileWriter(controller.getConfig().getCrawlStorageFolder(),true);
+                                        BufferedWriter write = new BufferedWriter(file);
+                                        for (WebURL webURL : crawlersLocalData){
+                                            write.write(webURL.toString());
+                                        }
+                                        write.close();
+                                        file.close();
 
                                         logger.info(
                                                 "Waiting for " + config.getCleanupDelaySeconds() +
                                                         " seconds before final clean up...");
                                         sleep(config.getCleanupDelaySeconds());
 
-                                        //frontier.close();
-                                        //docIdServer.close();
                                         pageFetcher.shutDown();
 
                                         finished = true;
-                                        //waitingLock.notifyAll();
-                                        //env.close();
 
                                         return;
                                     }
@@ -417,9 +422,9 @@ public class SimpleController extends Configurable{
     }
 
     public static void main(String []args)throws Exception{
-        String folder = "./data/crawl";
-        int numofCrawlers = 1;
-        int maxDepth = 1;
+        String folder = "./data/output.txt";
+        int numofCrawlers = Runtime.getRuntime().availableProcessors();
+        int maxDepth = 2;
 
 
 

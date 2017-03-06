@@ -20,6 +20,8 @@ import fetcher.PageFetcher;
 import fetcher.PageFetchResult;
 import url.WebURL;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -77,6 +79,12 @@ public class WebCrawler implements Runnable{
     //private Frontier frontier;
 
     /**
+     *
+     */
+    private List<WebURL> characterSet;
+
+
+    /**
      * Is the current crawler instance waiting for new URLs? This field is
      * mainly used by the controller to detect whether all of the crawler
      * instances are waiting for new URLs and therefore there is no more work
@@ -103,6 +111,7 @@ public class WebCrawler implements Runnable{
         this.frontier = crawlController.getFrontier();
         this.parser = new Parser(crawlController.getConfig());
         this.myController = crawlController;
+        this.characterSet = new ArrayList<>();
         this.isWaitingForNewURLs = false;
     }
 
@@ -216,8 +225,8 @@ public class WebCrawler implements Runnable{
      *
      * @return currently NULL
      */
-    public Object getMyLocalData() {
-        return null;
+    public List<WebURL> getMyLocalData() {
+        return this.characterSet;
     }
 
     @Override
@@ -417,14 +426,16 @@ public class WebCrawler implements Runnable{
                 if (shouldFollowLinksIn(page)) {
                     System.out.println(page.getWebURL().getURL());
                     System.out.println(page.getWebURL().getAnchor());
+                    this.characterSet.add(curURL);
                     ParseData parseData = page.getParseData();
                     List<WebURL> toSchedule = new ArrayList<>();
                     int maxCrawlDepth = myController.getConfig().getMaxDepthOfCrawling();
                     for (WebURL webURL : parseData.getOutgoingUrls()) {
                         webURL.setParentDocid(curURL.getDocid());
                         webURL.setParentUrl(curURL.getURL());
+                        boolean subUrl = webURL.getURL().startsWith(curURL.getURL());
                         int newdocid = urlIdServer.getUrlId(webURL.getURL());
-                        if (newdocid > 0) {
+                        if (newdocid > 0 ||subUrl) {
                             // This is not the first time that this Url is visited. So, we set the
                             // depth to a negative number.
                             webURL.setDepth((short) -1);
