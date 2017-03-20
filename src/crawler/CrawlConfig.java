@@ -24,10 +24,19 @@ public class CrawlConfig {
     private String crawlStorageFolder;
 
     /**
-     * If this feature is enabled, you would be able to resume a previously
-     * stopped/crashed crawl. However, it makes crawling slightly slower
+     * The data structure which will be used for storing the url
+     * 1 : concurrency database (simply synchronised operation)
+     * 2 : lockfree queues
      */
-    private boolean resumableCrawling = false;
+    private int urlStorageType;
+
+
+    /**
+     * The data structure which will be used for storing all the visited urls
+     * 1 : simply synchronised operations with a hashmap
+     */
+    private int urlServerType;
+
 
     /**
      * Maximum depth of crawling For unlimited depth this parameter should be
@@ -56,7 +65,7 @@ public class CrawlConfig {
      * Politeness delay in milliseconds (delay between sending two requests to
      * the same host).
      */
-    private int politenessDelay = 20;
+    private int politenessDelay = 200;
 
     /**
      * Should we also crawl https pages?
@@ -136,36 +145,7 @@ public class CrawlConfig {
      */
     private int cleanupDelaySeconds = 1;
 
-    /**
-     * If crawler should run behind a proxy, this parameter can be used for
-     * specifying the proxy host.
-     */
-    private String proxyHost = null;
 
-    /**
-     * If crawler should run behind a proxy, this parameter can be used for
-     * specifying the proxy port.
-     */
-    private int proxyPort = 80;
-
-    /**
-     * If crawler should run behind a proxy and user/pass is needed for
-     * authentication in proxy, this parameter can be used for specifying the
-     * username.
-     */
-    private String proxyUsername = null;
-
-    /**
-     * If crawler should run behind a proxy and user/pass is needed for
-     * authentication in proxy, this parameter can be used for specifying the
-     * password.
-     */
-    private String proxyPassword = null;
-
-    /**
-     * List of possible authentications needed by crawler
-     */
-    //private List<AuthInfo> authInfos;
 
     /**
      * Validates the configs specified by this instance.
@@ -203,19 +183,32 @@ public class CrawlConfig {
         this.crawlStorageFolder = crawlStorageFolder;
     }
 
-    /*public boolean isResumableCrawling() {
-        return resumableCrawling;
-    }*/
+
+
+    public int getUrlStorageType() {
+        return urlStorageType;
+    }
 
     /**
-     * If this feature is enabled, you would be able to resume a previously
-     * stopped/crashed crawl. However, it makes crawling slightly slower
-     *
-     * //@param resumableCrawling Should crawling be resumable between runs ?
+     * Choose the data structure used for storing all the intermediate urls
+     * @param type The type de data structure used for storing the urls, 1 or 2
      */
-   /* public void setResumableCrawling(boolean resumableCrawling) {
-        this.resumableCrawling = resumableCrawling;
-    }*/
+    public void setUrlStorageType(int type){
+        this.urlStorageType = type;
+    }
+
+    public int getUrlServerType() {
+        return urlServerType;
+    }
+
+    /**
+     * Choose the data structure used for storing all the visited urls
+     * @param type 1 stand for simple synchronised hashmap
+     */
+    public void setUrlServerType(int type) {
+        this.urlServerType = type;
+    }
+
 
     public int getMaxDepthOfCrawling() {
         return maxDepthOfCrawling;
@@ -432,79 +425,6 @@ public class CrawlConfig {
         onlineTldListUpdate = online;
     }
 
-    public String getProxyHost() {
-        return proxyHost;
-    }
-
-    /**
-     * @param proxyHost If crawler should run behind a proxy, this parameter can be used for
-     * specifying the proxy host.
-     */
-    public void setProxyHost(String proxyHost) {
-        this.proxyHost = proxyHost;
-    }
-
-    public int getProxyPort() {
-        return proxyPort;
-    }
-
-    /**
-     * @param proxyPort If crawler should run behind a proxy, this parameter can be used for
-     * specifying the proxy port.
-     */
-    public void setProxyPort(int proxyPort) {
-        this.proxyPort = proxyPort;
-    }
-
-    public String getProxyUsername() {
-        return proxyUsername;
-    }
-
-    /**
-     * @param proxyUsername
-     *        If crawler should run behind a proxy and user/pass is needed for
-     *        authentication in proxy, this parameter can be used for specifying the username.
-     */
-    public void setProxyUsername(String proxyUsername) {
-        this.proxyUsername = proxyUsername;
-    }
-
-    public String getProxyPassword() {
-        return proxyPassword;
-    }
-
-    /**
-     * If crawler should run behind a proxy and user/pass is needed for
-     * authentication in proxy, this parameter can be used for specifying the password.
-     *
-     * @param proxyPassword String Password
-     */
-    public void setProxyPassword(String proxyPassword) {
-        this.proxyPassword = proxyPassword;
-    }
-
-    /**
-     * @return the authentications Information
-     */
-    /*
-    public List<AuthInfo> getAuthInfos() {
-        return authInfos;
-    }
-
-    public void addAuthInfo(AuthInfo authInfo) {
-        if (this.authInfos == null) {
-            this.authInfos = new ArrayList<AuthInfo>();
-        }
-
-        this.authInfos.add(authInfo);
-    }*/
-
-    /**
-     * @param //authInfos authenticationInformations to set
-     */
-    /*public void setAuthInfos(List<AuthInfo> authInfos) {
-        this.authInfos = authInfos;
-    }*/
 
     public int getThreadMonitoringDelaySeconds() {
         return threadMonitoringDelaySeconds;
@@ -547,10 +467,6 @@ public class CrawlConfig {
         sb.append("Max outgoing links to follow: " + getMaxOutgoingLinksToFollow() + "\n");
         sb.append("Max download size: " + getMaxDownloadSize() + "\n");
         sb.append("Should follow redirects?: " + isFollowRedirects() + "\n");
-        sb.append("Proxy host: " + getProxyHost() + "\n");
-        sb.append("Proxy port: " + getProxyPort() + "\n");
-        sb.append("Proxy username: " + getProxyUsername() + "\n");
-        sb.append("Proxy password: " + getProxyPassword() + "\n");
         sb.append("Thread monitoring delay: " + getThreadMonitoringDelaySeconds() + "\n");
         sb.append("Thread shutdown delay: " + getThreadShutdownDelaySeconds() + "\n");
         sb.append("Cleanup delay: " + getCleanupDelaySeconds() + "\n");

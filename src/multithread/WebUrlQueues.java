@@ -55,4 +55,8 @@ public class WebUrlQueues {
             waitList.notifyAll();
         }
     }
+
+    public int getScheduledPageNum(){
+        return this.urlQueue.getPageNum();
+    }
 }

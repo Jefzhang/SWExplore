@@ -1,5 +1,6 @@
 package util;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -17,11 +18,13 @@ public class LockFreeQueue<E> {
     }
 
     private final AtomicReference<Node> head, tail;
+    private AtomicInteger urlCount;
 
     public LockFreeQueue() {
         Node sentinel = new Node(null, null);
         this.head = new AtomicReference<>(sentinel);
         this.tail = new AtomicReference<>(sentinel);
+        this.urlCount = new AtomicInteger(0);
     }
 
     public boolean isEmpty() {
@@ -39,6 +42,7 @@ public class LockFreeQueue<E> {
         Node newTail = new Node(data, null);
         Node oldTail = tail.getAndSet(newTail);
         oldTail.next = newTail;
+        this.urlCount.getAndIncrement();
     }
 
     public E take() {
@@ -52,6 +56,10 @@ public class LockFreeQueue<E> {
         E data = next.data;
         next.data = null;
         return data;
+    }
+
+    public int getPageNum(){
+        return this.urlCount.get();
     }
 
 

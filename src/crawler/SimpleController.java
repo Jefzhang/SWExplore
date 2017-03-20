@@ -80,7 +80,6 @@ public class SimpleController extends Configurable{
         frontier = new WebUrlQueues();
 
         this.pageFetcher = pageFetcher;
-        //this.robotstxtServer = robotstxtServer;
 
         finished = false;
         shuttingDown = false;
@@ -137,10 +136,10 @@ public class SimpleController extends Configurable{
             final SimpleController controller = this;
             final CrawlConfig config = this.getConfig();
 
-            Thread monitorThread = new Thread(new Runnable() {
+            //Thread monitorThread = new Thread(new Runnable() {
 
-                @Override
-                public void run() {
+               // @Override
+               // public void run() {
                     try {
                         while (true) {
                                 sleep(config.getThreadMonitoringDelaySeconds());
@@ -227,19 +226,20 @@ public class SimpleController extends Configurable{
                                         pageFetcher.shutDown();
 
                                         finished = true;
+                                        break;
 
-                                        return;
+                                        //return;
                                     }
                                 }
                             }
                     } catch (Exception e) {
                         logger.error("Unexpected Error", e);
                     }
-                }
-            });
+               // };
+           // });
 
-            monitorThread.start();
-            monitorThread.join();
+           // monitorThread.start();
+           // monitorThread.join();
 
             /*if (isBlocking) {
                 waitUntilFinish();
