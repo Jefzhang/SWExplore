@@ -37,7 +37,6 @@ public class SimpleController extends Configurable{
     protected boolean shuttingDown;
 
     protected PageFetcher pageFetcher;
-    //protected RobotstxtServer robotstxtServer;
     protected WebUrlQueues frontier;
     protected UrlIdServer docIdServer;
 
