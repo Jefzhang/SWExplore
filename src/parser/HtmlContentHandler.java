@@ -24,7 +24,8 @@ public class HtmlContentHandler extends DefaultHandler{
         BODY,
         H2,
         H1,
-        SCRIPT
+        SCRIPT,
+        HEAD
     }
 
     private static class HtmlFactory {
@@ -47,14 +48,16 @@ public class HtmlContentHandler extends DefaultHandler{
     private String metaLocation;
     private final Map<String, String> metaTags = new HashMap<>();
     private String webTitle;
-    private boolean isWithinBodyElement;
-    private boolean isWithinScript;
-    private boolean isWithh2;
+    private volatile boolean isWithinBodyElement;
+    private volatile boolean isWithinScript;
+    private volatile boolean isWithinHead;
+    private boolean isWithinh2;
     private boolean isWithinh1;
     private boolean hasBiography;
     private boolean hasPersonality;
 
-    private final StringBuilder bodyText;
+    private final StringBuilder menuText;
+    private final StringBuilder headText;
 
     private final List<UrlTagPair> outgoingUrls;
 
@@ -65,11 +68,13 @@ public class HtmlContentHandler extends DefaultHandler{
     public HtmlContentHandler() {
         isWithinBodyElement = false;
         isWithinScript = false;
+        isWithinHead = false;
         isWithinh1 = false;
-        isWithh2 = false;
+        isWithinh2 = false;
         hasBiography = false;
         hasPersonality = false;
-        bodyText = new StringBuilder();
+        menuText = new StringBuilder();
+        headText = new StringBuilder();
         outgoingUrls = new ArrayList<>();
     }
 
@@ -77,7 +82,8 @@ public class HtmlContentHandler extends DefaultHandler{
 
     public void startElement(String uri, String localName, String qName, Attributes attributes)
     throws SAXException {
-        Element element = HtmlFactory.getElement(localName);
+        //System.out.println(qName);
+        Element element = HtmlFactory.getElement(qName);
         //System.out.println("start an element");
 
         /*if (element == Element.A) {           //read href
@@ -102,15 +108,15 @@ public class HtmlContentHandler extends DefaultHandler{
             }
         }else if(element == Element.BODY)
                 isWithinBodyElement = true;
-        //else if(element == Element.H2)
-          //      isWithh2 = true;
-        else if(element == Element.SCRIPT)
-                isWithinScript = true;
+        else if(element == Element.H2)
+                isWithinh2 = true;
+        else if(element == Element.SCRIPT) {
+            isWithinScript = true;
+        }
         else if(element== Element.H1) {
             isWithinh1 = true;
             anchorFlag = true;
         }
-
     }
 
     private void addToOutgoingUrls(String href, String tag) {
@@ -122,7 +128,7 @@ public class HtmlContentHandler extends DefaultHandler{
 
     @Override
     public void endElement(String uri, String localName, String qName){
-        Element element = HtmlFactory.getElement(localName);
+        Element element = HtmlFactory.getElement(qName);
             if(element == Element.A){
                 //anchorFlag = false;
                 /*if (curUrl != null) {
@@ -138,10 +144,10 @@ public class HtmlContentHandler extends DefaultHandler{
                     anchorText.delete(0, anchorText.length());
                 }*/
                 curUrl = null;}
-          //  else if (element==Element.BODY)
-            //    isWithinBodyElement = false;
+            else if (element==Element.BODY)
+                isWithinBodyElement = false;
             else if (element==Element.H2)
-                isWithh2 = false;
+                isWithinh2 = false;
             else if (element==Element.SCRIPT)
                 isWithinScript = false;
             else if (element==Element.H1) {
@@ -152,29 +158,45 @@ public class HtmlContentHandler extends DefaultHandler{
                     this.webTitle = name;
                 }
                 else this.webTitle = null;
+                anchorText.delete(0, anchorText.length());
             }
-
     }
 
     @Override
     public void characters(char[] ch, int start, int length) {
-        if (isWithinBodyElement) {
-            if (bodyText.length() > 0) {
-                bodyText.append(' ');
+        if (isWithinh2) {
+            if (menuText.length() > 0) {
+                menuText.append(' ');
             }
-            bodyText.append(ch, start, length);
-            if (anchorFlag) {
-                anchorText.append(new String(ch, start, length));
-            }
+            menuText.append(ch, start, length);
+
             /*if(isWithh2){
                 if (new String(ch).contains("Biography")) hasBiography = true;
                 if (new String(ch).contains("Personality")) hasPersonality = true;
             }*/
         }
+        if(isWithinBodyElement){
+            if (anchorFlag) {
+                anchorText.append(new String(ch, start, length));
+            }
+        }
+        /*if(isWithinScript){
+            if(headText.length() > 0){
+                headText.append(' ');
+            }
+            //System.out.println(new String(ch));
+            headText.append(new String(ch,start,length));
+        }*/
+       // System.out.print(ch.toString());
     }
 
-    public String getBodyText() {
-        return bodyText.toString().replaceAll("\n", " ").replaceAll("\t", " ").trim();
+    @Override
+    public void skippedEntity(String name){
+        System.out.println(name);
+    }
+
+    public String getMenuText() {
+        return menuText.toString().replaceAll("\n", " ").replaceAll("\t", " ").trim();
     }
 
     public List<UrlTagPair> getOutgoingUrls() {
@@ -187,6 +209,10 @@ public class HtmlContentHandler extends DefaultHandler{
 
     public String getWebTitle(){
         return this.webTitle;
+    }
+
+    public String getScriptText(){
+        return headText.toString().replaceAll("\n"," ").replaceAll("\t"," ").trim();
     }
 
     public boolean DoeshaveBiography(){

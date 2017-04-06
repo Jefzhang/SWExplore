@@ -19,6 +19,7 @@ public class WebURL implements Serializable{
     private int docid;
     private int parentDocid;
     private String parentUrl;
+    private String parentAnchor;
     private short depth;
     private String domain;
     private String subDomain;
@@ -99,6 +100,14 @@ public class WebURL implements Serializable{
 
     public void setParentUrl(String parentUrl) {
         this.parentUrl = parentUrl;
+    }
+
+    public String getParentAnchor(){
+        return parentAnchor;
+    }
+
+    public void setParentAnchor(String parentAnchor){
+        this.parentAnchor = parentAnchor;
     }
 
     /**
@@ -195,7 +204,7 @@ public class WebURL implements Serializable{
 
     @Override
     public String toString() {
-        return this.anchor+": "+this.depth+"\n";
+        return this.anchor+": "+this.depth+" "+this.url+"\n";
     }
 
 }

@@ -48,6 +48,7 @@ public class Parser extends Configurable{
     {
             Metadata metadata = new Metadata();
             HtmlContentHandler contentHandler = new HtmlContentHandler();
+            //System.out.println(page.getContentData().toString());
             try (InputStream inputStream = new ByteArrayInputStream(page.getContentData())) {
                 htmlParser.parse(inputStream, contentHandler, metadata, parseContext);
             } catch (Exception e) {
@@ -56,12 +57,15 @@ public class Parser extends Configurable{
                 //logger.error("type of exception:{}",e.toString());
                 throw new ParseException();
             }
+           // System.out.println(metadata.toString());
+            //System.out.println(parseContext.toString());
             if (page.getContentCharset() == null) {
                 page.setContentCharset(metadata.get("Content-Encoding"));
             }
+            System.out.println(contentHandler.getWebTitle());
             page.getWebURL().setAnchor(contentHandler.getWebTitle());
             HtmlParseData parseData = new HtmlParseData();
-            parseData.setText(contentHandler.getBodyText().trim());
+            parseData.setText(contentHandler.getMenuText().trim());
             parseData.setTitle(metadata.get(DublinCore.TITLE));
             //parseData.setMetaTags(contentHandler.getMetaTags());
             // Please note that identifying language takes less than 10 milliseconds
@@ -103,7 +107,7 @@ public class Parser extends Configurable{
                             WebURL webURL = new WebURL();
                             webURL.setURL(url);
                             webURL.setTag(urlAnchorPair.getTag());
-                            webURL.setAnchor(urlAnchorPair.getAnchor());
+                            //webURL.setAnchor(urlAnchorPair.getAnchor());
                             outgoingUrls.add(webURL);
                             urlCount++;
                             if (urlCount > config.getMaxOutgoingLinksToFollow()) {
@@ -131,24 +135,19 @@ public class Parser extends Configurable{
 
     public boolean isCharacter(HtmlContentHandler handler){
         int count = 0;
-        /*if(handler.DoeshaveBiography()){
-            count +=3;
-            if(handler.DoeshavePersonality()){
-                count +=1;
-            }
-        }
-        if(count>=4) return true;
-        if((count>=3)&&(Math.random()>=0.05)) return true;
-        else return false;*/
-        String bodytext = handler.getBodyText();
-        //System.out.println(bodytext);
-        boolean hasBiography = bodytext.matches("(.*)Biographical information(.*)");
-        boolean hasPersonality = bodytext.matches("(.*)Personality and traits(.*)");
+        String menutext = handler.getMenuText();
+        boolean hasBiography = menutext.matches("(.*)Biography(.*)");
+        boolean hasPersonality = menutext.matches("(.*)Personality and traits(.*)");
+        boolean hasCharacter = menutext.matches("(.*)Characteristic(.*)");
         if(hasBiography) count+=3;
-        if(hasPersonality) count+=1;
+        if(hasPersonality||hasCharacter) count+=1;
         System.out.println(count);
         if(count>=4) return true;
-        if((count>=3)&&(Math.random()>=0.05)) return true;
+        if((count>=3)&&(Math.random()>=0.25)) return true;
         else return false;
+       /*String headText = handler.getBodyText();
+       System.out.println(headText);
+       return headText.matches("(.*)wgArticleType=\"character\"(.*)");*/
+
     }
 }

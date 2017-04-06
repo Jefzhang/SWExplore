@@ -4,7 +4,7 @@ import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 import fetcher.PageFetcher;
 import multithread.Frontier;
-import multithread.UrlIdServer;
+import multithread.*;
 import multithread.WebUrlQueues;
 import url.URLnormlization;
 import url.WebURL;
@@ -13,22 +13,45 @@ import util.IO;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.TreeSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
 /**
  * Created by jfzhang on 05/03/2017.
  */
+class webUrlComparator implements Comparator<WebURL>{
+    @Override
+    public int compare(WebURL url1,WebURL url2){
+        int depth1 = url1.getDepth();
+        int depth2 = url2.getDepth();
+        String name1 = url1.getAnchor();
+        String name2 = url2.getAnchor();
+        if(depth1<depth2){
+            return -1;
+        }
+        else if(depth1==depth2){
+            return name1.compareTo(name2);
+        }
+        else return 1;
+
+    }
+}
 public class SimpleController extends Configurable{
 
 
     static final Logger logger = LoggerFactory.getLogger(SimpleController.class);
     protected boolean finished;
 
-    protected ArrayList<WebURL> crawlersLocalData = new ArrayList<>();
+    protected TreeSet<WebURL> crawlersLocalData = new TreeSet<>(new webUrlComparator());
+   // protected ArrayList<WebURL> crawlersLocalData = new ArrayList<>();
 
     /**
      * Is the crawling session set to 'shutdown'. Crawler threads monitor this
@@ -37,49 +60,15 @@ public class SimpleController extends Configurable{
     protected boolean shuttingDown;
 
     protected PageFetcher pageFetcher;
-    protected WebUrlQueues frontier;
-    protected UrlIdServer docIdServer;
+    protected WebUrlQueues queue;
+    protected UrlDiscovered urlDiscovered;
 
     public SimpleController(CrawlConfig config, PageFetcher pageFetcher) throws Exception {
-
         super(config);
         config.validate();
-
-        /*
-        File folder = new File(config.getCrawlStorageFolder());
-        if (!folder.exists()) {
-            if (folder.mkdirs()) {
-                logger.debug("Created folder: " + folder.getAbsolutePath());
-            } else {
-                throw new Exception(
-                        "couldn't create the storage folder: " + folder.getAbsolutePath() +
-                                " does it already exist ?");
-            }
-        }
-
-
-        File envHome = new File(config.getCrawlStorageFolder() + "/frontier");
-        if (!envHome.exists()) {
-            if (envHome.mkdir()) {
-                logger.debug("Created folder: " + envHome.getAbsolutePath());
-            } else {
-                throw new Exception(
-                        "Failed creating the frontier folder: " + envHome.getAbsolutePath());
-            }
-        }
-
-        IO.deleteFolderContents(envHome);
-        logger.info("Deleted contents of: " + envHome +
-                " ( as you have configured resumable crawling to false )");
-
-
-        env = new Environment(envHome, envConfig);
-        */
-        docIdServer = new UrlIdServer();
-        frontier = new WebUrlQueues();
-
+        urlDiscovered = new SafeHashSet();
+        queue = new WebUrlQueues();
         this.pageFetcher = pageFetcher;
-
         finished = false;
         shuttingDown = false;
     }
@@ -116,6 +105,7 @@ public class SimpleController extends Configurable{
         try {
 
             long before = System.nanoTime();
+            long after = System.nanoTime();
             finished = false;
             crawlersLocalData.clear();
             final List<Thread> threads = new ArrayList<>();
@@ -184,7 +174,7 @@ public class SimpleController extends Configurable{
                                     if (!someoneIsWorking) {
                                         if (!shuttingDown) {
                                             //long queueLength = frontier.getQueueLength();
-                                            if (!frontier.isEmpty()) {
+                                            if (!queue.isEmpty()) {
                                                 continue;
                                             }
                                             logger.info(
@@ -194,7 +184,7 @@ public class SimpleController extends Configurable{
                                                             " seconds to make sure...");
                                             sleep(config.getThreadShutdownDelaySeconds());
                                             //queueLength = frontier.getQueueLength();
-                                            if (!frontier.isEmpty()) {
+                                            if (!queue.isEmpty()) {
                                                 continue;
                                             }
                                         }
@@ -204,18 +194,50 @@ public class SimpleController extends Configurable{
                                                         "process...");
                                         // At this step, frontier notifies the threads that were
                                         // waiting for new URLs and they should stop
-                                        frontier.finish();
+                                        after = System.nanoTime();
+                                        queue.finish();   //finish workqueue, the crawlers will shutdown
+
                                         for (T crawler : crawlers) {
                                             crawler.onBeforeExit();
                                             crawlersLocalData.addAll(crawler.getMyLocalData());
                                         }
-                                        FileWriter file = new FileWriter(controller.getConfig().getCrawlStorageFolder(),true);
+
+
+                                        FileWriter file = new FileWriter(controller.getConfig().getCrawlStorageFolder()+"output.txt",true);
                                         BufferedWriter write = new BufferedWriter(file);
                                         for (WebURL webURL : crawlersLocalData){
                                             write.write(webURL.toString());
                                         }
                                         write.close();
                                         file.close();
+
+                                        JSONObject resultJson = new JSONObject();
+                                        JSONArray nodes = new JSONArray();
+                                        JSONArray links = new JSONArray();
+
+                                        for (WebURL webURL : crawlersLocalData){
+                                            JSONObject node = new JSONObject();
+                                            node.put("id",webURL.getAnchor());
+                                            node.put("depth",webURL.getDepth());
+                                            node.put("url",webURL.getURL());
+                                            nodes.add(node);
+                                            if(webURL.getDepth()!=0){
+                                                JSONObject link = new JSONObject();
+                                                link.put("source",webURL.getParentAnchor());
+                                                link.put("target",webURL.getAnchor());
+                                                links.add(link);
+                                            }
+                                        }
+                                        resultJson.put("nodes",nodes);
+                                        resultJson.put("links",links);
+
+                                        try (FileWriter file1 = new FileWriter(controller.getConfig().getCrawlStorageFolder()+"resultJson.json")) {
+                                            file1.write(resultJson.toJSONString());
+                                            System.out.println("Successfully Copied JSON Object to File...");
+                                            //System.out.println("\nJSON Object: " + obj);
+                                        }
+
+
 
                                         logger.info(
                                                 "Waiting for " + config.getCleanupDelaySeconds() +
@@ -243,7 +265,7 @@ public class SimpleController extends Configurable{
             /*if (isBlocking) {
                 waitUntilFinish();
             }*/
-            long after = System.nanoTime();
+
             double complexity = (after - before) / 1_000_000_000.0;
             System.out.format("Finished in %fs.\n", complexity);
 
@@ -282,9 +304,9 @@ public class SimpleController extends Configurable{
      * @param pageUrl
      *            the URL of the seed
      */
-    public void addSeed(String pageUrl) {
+    /*public void addSeed(String pageUrl) {
         addSeed(pageUrl, -1);
-    }
+    }*/
 
     /**
      * Adds a new seed URL. A seed URL is a URL that is fetched by the crawler
@@ -301,25 +323,21 @@ public class SimpleController extends Configurable{
      *
      * @param pageUrl
      *            the URL of the seed
-     * @param docId
+
      *            the document id that you want to be assigned to this seed URL.
      *
      */
-    public void addSeed(String pageUrl, int docId) {
+    public void addSeed(String pageUrl) {
         String canonicalUrl = URLnormlization.getCanonicalURL(pageUrl);
         if (canonicalUrl == null) {
             logger.error("Invalid seed URL: {}", pageUrl);
         } else {
-            if (docId < 0) {
-                docId = docIdServer.getUrlId(canonicalUrl);
-                if (docId > 0) {
+            if (this.urlDiscovered.contains(pageUrl)) {
                     logger.trace("This URL is already seen.");
                     return;
-                }
-                docId = docIdServer.getNewUrlID(canonicalUrl);
             } else {
                 try {
-                    docIdServer.addUrlIdPair(canonicalUrl, docId);
+                    this.urlDiscovered.add(canonicalUrl);
                 } catch (Exception e) {
                     logger.error("Could not add seed: {}", e.getMessage());
                 }
@@ -327,45 +345,13 @@ public class SimpleController extends Configurable{
 
             WebURL webUrl = new WebURL();
             webUrl.setURL(canonicalUrl);
-            webUrl.setDocid(docId);
+            //webUrl.setDocid(docId);
             webUrl.setDepth((short) 0);
             //if (robotstxtServer.allows(webUrl)) {
-            frontier.schedule(webUrl);
-            /*} else {
-                // using the WARN level here, as the user specifically asked to add this seed
-                logger.warn("Robots.txt does not allow this seed: {}", pageUrl);
-            }*/
+            this.queue.schedule(webUrl);
         }
     }
 
-    /**
-     * This function can called to assign a specific document id to a url. This
-     * feature is useful when you have had a previous crawl and have stored the
-     * Urls and their associated document ids and want to have a new crawl which
-     * is aware of the previously seen Urls and won't re-crawl them.
-     *
-     * Note that if you add three seen Urls with document ids 1,2, and 7. Then
-     * the next URL that is found during the crawl will get a doc id of 8. Also
-     * you need to ensure to add seen Urls in increasing order of document ids.
-     *
-     * @param url
-     *            the URL of the page
-     * @param docId
-     *            the document id that you want to be assigned to this URL.
-     *
-     */
-    public void addSeenUrl(String url, int docId) {
-        String canonicalUrl = URLnormlization.getCanonicalURL(url);
-        if (canonicalUrl == null) {
-            logger.error("Invalid Url: {} (can't cannonicalize it!)", url);
-        } else {
-            try {
-                docIdServer.addUrlIdPair(canonicalUrl, docId);
-            } catch (Exception e) {
-                logger.error("Could not add seen url: {}", e.getMessage());
-            }
-        }
-    }
 
     public PageFetcher getPageFetcher() {
         return pageFetcher;
@@ -377,20 +363,20 @@ public class SimpleController extends Configurable{
 
 
     public WebUrlQueues getFrontier() {
-        return frontier;
+        return this.queue;
     }
 
-    public void setFrontier(WebUrlQueues frontier) {
+    /*public void setFrontier(WebUrlQueues frontier) {
         this.frontier = frontier;
+    }*/
+
+    public UrlDiscovered getUrlBase() {
+        return this.urlDiscovered;
     }
 
-    public UrlIdServer getDocIdServer() {
-        return docIdServer;
-    }
-
-    public void setDocIdServer(UrlIdServer docIdServer) {
+    /*public void setDocIdServer(UrlIdServer docIdServer) {
         this.docIdServer = docIdServer;
-    }
+    }*/
 
     /*public Object getCustomData() {
         return customData;
@@ -417,13 +403,14 @@ public class SimpleController extends Configurable{
         logger.info("Shutting down...");
         this.shuttingDown = true;
         pageFetcher.shutDown();
-        frontier.finish();
+        queue.finish();
     }
 
     public static void main(String []args)throws Exception{
-        String folder = "./data/output.txt";
+
+        String folder = "./data/";
         int numofCrawlers = Runtime.getRuntime().availableProcessors();
-        int maxDepth = 2;
+        int maxDepth = 1;
 
 
 
