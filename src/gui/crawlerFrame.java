@@ -1,5 +1,10 @@
 package gui;
 
+import crawler.CrawlConfig;
+import crawler.SimpleController;
+import crawler.WebCrawler;
+import fetcher.PageFetcher;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -7,9 +12,12 @@ import java.awt.event.*;
 public class crawlerFrame extends JFrame {
     private static JTextField name;
     private static JTextField depth;
-    private static JList DataStructure;
+    private static JComboBox DataStructure;
     private static JTextField politeDelay;
+    private static JCheckBox resume;
     public static String[] parameters = new String[4]; //parameters for the crawlers (name, depth, DataStructure)
+    static SimpleController controller;
+
 
 
     static JPanel inputPanel;
@@ -66,80 +74,64 @@ public class crawlerFrame extends JFrame {
         JLabel lbData = new JLabel("Queue:");
         lbData.setAlignmentY(Component.CENTER_ALIGNMENT);
         //lbData.setBorder(BorderFactory.createEmptyBorder(30, 5, 0, 5));
+        String[] queueType = {"BlockingQueue","LockFreeQueue","Java-BlockingQueue","Java-ConcurrentQueue"};
+        DataStructure = new JComboBox(queueType);
+        DataStructure.setSelectedIndex(3);
+        DataStructure.setAlignmentY(Component.CENTER_ALIGNMENT);
+        //DataStructure.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+        JPanel DataStructurePanel = new JPanel();
+        DataStructurePanel.setLayout(new BoxLayout(DataStructurePanel, BoxLayout.X_AXIS));
+        DataStructurePanel.add(lbData);
+        DataStructurePanel.add(DataStructure);
+        DataStructurePanel.setAlignmentY(Component.CENTER_ALIGNMENT);
+        DataStructurePanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+        inputPanel.add(DataStructurePanel);
+
+        /*
         DefaultListModel listmodel = new DefaultListModel();
+        listmodel.addElement("BlockingQueue");
         listmodel.addElement("LockFreeQueue");
-        listmodel.addElement("Queue2");
-        listmodel.addElement("Queue3");
+        listmodel.addElement("Java-BlockingQueue");
+        listmodel.addElement("Java-ConcurrentQueue");
         DataStructure = new JList(listmodel);
         DataStructure.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
         DataStructure.setVisibleRowCount(3);
         JScrollPane DataStructureScroller = new JScrollPane(DataStructure);
         DataStructureScroller.setPreferredSize(new Dimension(220, 80));
         DataStructureScroller.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        DataStructureScroller.setAlignmentY(Component.TOP_ALIGNMENT);
+        DataStructureScroller.setAlignmentY(Component.CENTER_ALIGNMENT);
         JPanel DataStructurePanel = new JPanel();
         DataStructurePanel.setLayout(new BoxLayout(DataStructurePanel, BoxLayout.X_AXIS));
         DataStructurePanel.add(lbData);
         DataStructurePanel.add(DataStructureScroller);
-        DataStructurePanel.setAlignmentY(Component.TOP_ALIGNMENT);
+        DataStructurePanel.setAlignmentY(Component.CENTER_ALIGNMENT);
         DataStructurePanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
         inputPanel.add(DataStructurePanel);
 
-        inputPanel.add(Box.createHorizontalStrut(10));
+        inputPanel.add(Box.createHorizontalStrut(10));*/
     }
 
     static void CreateCountPanel(){
         CountPanel = new JPanel();
         CountPanel.setLayout(new BoxLayout(CountPanel, BoxLayout.X_AXIS));
-		/*
-		JLabel lbData = new JLabel("Choose a data structure:");
-		lbData.setAlignmentY(Component.TOP_ALIGNMENT);
-		lbData.setBorder(BorderFactory.createEmptyBorder(300, 5, 0, 5));
-		DefaultListModel listmodel = new DefaultListModel();
-		listmodel.addElement("LockFreeQueue");
-		listmodel.addElement("Queue2");
-		listmodel.addElement("Queue3");
-		JList DataStructure = new JList(listmodel);
-		DataStructure.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
-		DataStructure.setVisibleRowCount(3);
-		JScrollPane DataStructureScroller = new JScrollPane(DataStructure);
-		DataStructureScroller.setPreferredSize(new Dimension(120, 80));
-		DataStructureScroller.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-	    DataStructureScroller.setAlignmentY(Component.TOP_ALIGNMENT);
-	    JPanel DataStructurePanel = new JPanel();
-	    DataStructurePanel.setLayout(new BoxLayout(DataStructurePanel, BoxLayout.X_AXIS));
-	    DataStructurePanel.add(lbData);
-	    DataStructurePanel.add(DataStructureScroller);
-	    DataStructurePanel.setAlignmentY(Component.TOP_ALIGNMENT);
-	    DataStructurePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 30));
-	    CountPanel.add(DataStructurePanel);
-	    */
-        JButton bntCount = new JButton("Start");
+        JTextArea namelist = new JTextArea(120,80);
+        JButton start = new JButton("Start");
+        JButton stop = new JButton("Stop");
+        resume = new JCheckBox("Resume");
+        resume.setSelected(false);
 
         JPanel ButtonPanel = new JPanel();
         ButtonPanel.setLayout(new BoxLayout(ButtonPanel, BoxLayout.Y_AXIS));
-        ButtonPanel.add(bntCount);
+        ButtonPanel.add(resume);
+        ButtonPanel.add(start);
+        ButtonPanel.add(stop);
         ButtonPanel.setBorder(BorderFactory.createEmptyBorder(200, 15, 15, 15));
         CountPanel.add(ButtonPanel);
 
-        bntCount.addActionListener(new ActionListener(){
-            @Override
-            public void actionPerformed(ActionEvent evt){
-                parameters[0] = name.getText();
-                parameters[1] = depth.getText();
-                parameters[2] = (String)DataStructure.getSelectedValue();
-
-                //System.out.println(parameters[2]);
-
-            }
-        });
-
-
-
         JLabel lbresult = new JLabel("Characters: ");
-        lbresult.setAlignmentY(Component.TOP_ALIGNMENT);
+        lbresult.setAlignmentY(Component.CENTER_ALIGNMENT);
         lbresult.setBorder(BorderFactory.createEmptyBorder(300, 5, 0, 5));
-        JTextArea namelist = new JTextArea(120,80);
+
         namelist.setEditable(false);
         namelist.setLineWrap(true);
         JScrollPane namelistScroller = new JScrollPane(namelist);
@@ -150,6 +142,49 @@ public class crawlerFrame extends JFrame {
         resultPanel.setAlignmentY(Component.TOP_ALIGNMENT);
         resultPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 3));
         CountPanel.add(resultPanel);
+
+        start.addActionListener(new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent evt){
+                parameters[0] = name.getText();         //character
+                parameters[1] = depth.getText();         //depth
+                parameters[2] = politeDelay.getText();   //politeDelay
+                parameters[3] = (String)DataStructure.getSelectedItem();       //DataStructure choosed
+               // parameters[4] = resume.
+
+
+                //isStart = true;
+                String folder = "./data/";
+                int numofCrawlers = Runtime.getRuntime().availableProcessors();
+                int maxDepth = Integer.parseInt(parameters[1]);
+                int politeDelay = Integer.parseInt(parameters[2]);
+
+                namelist.append("Crawler process start...\n\r");
+                namelist.append("Using "+numofCrawlers+" threads...\n\r");
+
+
+                CrawlConfig config = new CrawlConfig();
+                config.setCrawlStorageFolder(folder);
+                config.setMaxDepthOfCrawling(maxDepth);
+                config.setPolitenessDelay(politeDelay);
+                config.setResumable(resume.isSelected());
+
+                PageFetcher pageFetcher = new PageFetcher(config);
+                controller = new SimpleController(config, pageFetcher, parameters[3]);
+                if(!resume.isSelected()) {
+                    controller.addSeed("http://starwars.wikia.com/wiki/" + parameters[0]);
+                }
+                controller.start(WebCrawler.class, numofCrawlers);
+            }
+        });
+
+        stop.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                controller.shutdown();
+                namelist.append("Process stopped ");
+            }
+        });
 
     }
 
@@ -186,17 +221,17 @@ public class crawlerFrame extends JFrame {
         c2.gridx = 0;
         c2.gridy = 1;
         c2.weightx = 1.0;
-        c2.weighty = 0;
+        c2.weighty = 1.0;
         c2.fill = GridBagConstraints.BOTH;
         panelContainer.add(CountPanel, c2);
 
-        GridBagConstraints c3 = new GridBagConstraints();
+        /*GridBagConstraints c3 = new GridBagConstraints();
         c3.gridx = 0;
         c3.gridy = 2;
         c3.weightx = 1.0;
         c3.weighty = 0;
         c3.fill = GridBagConstraints.HORIZONTAL;
-        panelContainer.add(outputPanel, c3);
+        panelContainer.add(outputPanel, c3);*/
 
         JFrame SWFrame = new JFrame("Star War Character Search");
         SWFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -204,6 +239,9 @@ public class crawlerFrame extends JFrame {
         SWFrame.setSize(new Dimension(700, 600));
         SWFrame.setContentPane(panelContainer);
         SWFrame.setVisible(true);
+
+
+
 
 
     }

@@ -15,12 +15,16 @@ public class SafeHashSet extends UrlDiscovered {
 
     private static final Logger logger = LoggerFactory.getLogger(SafeHashSet.class);
 
-    private HashSet<String> urlBase;
+
     private final Lock l;
 
     public SafeHashSet(){
         this.urlBase = new HashSet<>();
         this.l = new ReentrantLock();
+    }
+
+    public HashSet<String> getURLBase(){
+        return urlBase;
     }
 
 

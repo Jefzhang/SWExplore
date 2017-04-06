@@ -16,9 +16,9 @@ public class WebURL implements Serializable{
     @PrimaryKey
     private String url;
 
-    private int docid;
-    private int parentDocid;
-    private String parentUrl;
+    //private int docid;
+    //private int parentDocid;
+   // private String parentUrl;
     private String parentAnchor;
     private short depth;
     private String domain;
@@ -26,18 +26,9 @@ public class WebURL implements Serializable{
     private String path;
     private String anchor;
     private byte priority;
-    private String tag;
+   // private String tag;
 
-    /**
-     * @return unique document id assigned to this Url.
-     */
-    public int getDocid() {
-        return docid;
-    }
 
-    public void setDocid(int docid) {
-        this.docid = docid;
-    }
 
     /**
      * @return Url string
@@ -76,31 +67,12 @@ public class WebURL implements Serializable{
         }
     }
 
-    /**
-     * @return
-     *      unique document id of the parent page. The parent page is the
-     *      page in which the Url of this page is first observed.
-     */
-    public int getParentDocid() {
-        return parentDocid;
-    }
-
-    public void setParentDocid(int parentDocid) {
-        this.parentDocid = parentDocid;
-    }
-
-    /**
+    /*
      * @return
      *      url of the parent page. The parent page is the page in which
      *      the Url of this page is first observed.
      */
-    public String getParentUrl() {
-        return parentUrl;
-    }
 
-    public void setParentUrl(String parentUrl) {
-        this.parentUrl = parentUrl;
-    }
 
     public String getParentAnchor(){
         return parentAnchor;
@@ -175,13 +147,13 @@ public class WebURL implements Serializable{
     /**
      * @return tag in which this URL is found
      * */
-    public String getTag() {
+    /*public String getTag() {
         return tag;
-    }
+    }*/
 
-    public void setTag(String tag) {
+   /* public void setTag(String tag) {
         this.tag = tag;
-    }
+    }*/
 
     @Override
     public int hashCode() {

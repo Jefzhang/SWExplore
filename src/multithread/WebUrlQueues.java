@@ -1,21 +1,43 @@
 package multithread;
 
-import url.WebURL;
-import util.LockFreeQueue;
-
-import java.util.List;
+import java.util.Collection;
 
 /**
  * Created by jfzhang on 04/03/2017.
  */
-public class WebUrlQueues {
+public abstract class WebUrlQueues<E> {
 
-    protected LockFreeQueue<WebURL> urlQueue;
+    protected boolean isfinished;
+    protected Object waitList=new Object();
+    public WebUrlQueues(){
+        this.isfinished = false;
+    }
+
+    public abstract void schedule(E data);
+    public abstract void scheduleAll(Collection<E> list);
+
+    public abstract void getNextURLs(int max, Collection<E>result);
+    public abstract E getNextURL();
+    public abstract boolean isEmpty();
+
+    public boolean isFinished(){
+        return this.isfinished;
+    }
+
+    public void finish(){
+        synchronized (waitList){
+            this.isfinished = true;
+            waitList.notifyAll();
+        }
+    }
+
+
+    /*protected ConcurrentLinkedQueue<WebURL> urlQueue;
     protected boolean isfinished;
     protected Object waitList = new Object();
 
     public WebUrlQueues(){
-        urlQueue = new LockFreeQueue();
+        urlQueue = new ConcurrentLinkedQueue<WebURL>();
         this.isfinished = false;
     }
 
@@ -34,7 +56,7 @@ public class WebUrlQueues {
 
         for(int i=0;i<max;i++){
             if(!urlQueue.isEmpty()){
-                result.add(urlQueue.take());
+                result.add(urlQueue.poll());
             }
             else break;
         }
@@ -56,7 +78,7 @@ public class WebUrlQueues {
         }
     }
 
-    public int getScheduledPageNum(){
+    /*public int getScheduledPageNum(){
         return this.urlQueue.getPageNum();
-    }
+    }*/
 }

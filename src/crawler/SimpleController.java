@@ -1,23 +1,17 @@
 package crawler;
 
-import com.sleepycat.je.Environment;
-import com.sleepycat.je.EnvironmentConfig;
 import fetcher.PageFetcher;
-import multithread.Frontier;
+import jdk.nashorn.internal.parser.JSONParser;
 import multithread.*;
 import multithread.WebUrlQueues;
+import org.json.simple.JSONValue;
 import url.URLnormlization;
 import url.WebURL;
-import util.IO;
 
 import java.io.BufferedWriter;
-import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.TreeSet;
+import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,17 +54,24 @@ public class SimpleController extends Configurable{
     protected boolean shuttingDown;
 
     protected PageFetcher pageFetcher;
-    protected WebUrlQueues queue;
+    protected WebUrlQueues<WebURL> queue;
     protected UrlDiscovered urlDiscovered;
+    protected double crawTime;
 
-    public SimpleController(CrawlConfig config, PageFetcher pageFetcher) throws Exception {
+    public SimpleController(CrawlConfig config, PageFetcher pageFetcher, String queueType) {
         super(config);
-        config.validate();
+        //config.validate();
         urlDiscovered = new SafeHashSet();
-        queue = new WebUrlQueues();
+        if(queueType.equals("LockFreeQueue")){
+            queue = new LockFreeQueue<WebURL>();
+        }else if(queueType.equals("BlockingQueue")){
+            queue = new SimpleBlockingQueue<WebURL>();
+        }
+
         this.pageFetcher = pageFetcher;
         finished = false;
         shuttingDown = false;
+        crawTime = 0;
     }
 
     public interface WebCrawlerFactory<T extends WebCrawler> {
@@ -108,6 +109,39 @@ public class SimpleController extends Configurable{
             long after = System.nanoTime();
             finished = false;
             crawlersLocalData.clear();
+            if(this.config.getResumable()){                    //load all the urls not-visited of last time
+                Object obj = JSONValue.parse(new FileReader(config.getCrawlStorageFolder()+"lastTime.json"));
+                JSONObject resumeData = (JSONObject) obj;
+                //System.out.println(urlJson.iterator().toString());
+                //System.out.println(urlJson);
+                JSONArray queueData = (JSONArray) resumeData.get("queue");
+                JSONArray visited = (JSONArray) resumeData.get("visited");
+
+                Iterator<Object> ite = queueData.iterator();
+                while(ite.hasNext()){
+                    Object data = ite.next();
+                    JSONObject dataJson = (JSONObject) data;
+                    WebURL url = new WebURL();
+                    url.setURL((String)dataJson.get("url"));
+                    System.out.println((String)dataJson.get("url"));
+                    Long depth = (Long) dataJson.get("depth");
+                    url.setDepth(depth.shortValue());
+                   // System.out.println((short)dataJson.get("depth"));
+
+                    //url.setParentUrl((String)dataJson.get("parentUrl"));
+                    url.setParentAnchor((String)dataJson.get("parentAnchor"));
+
+                    System.out.println(url.toString());
+                    //url.setTag((String)dataJson.get("tag"));
+                    queue.schedule(url);
+                }
+
+                Iterator<Object> ite1 = visited.iterator();
+                while(ite1.hasNext()){
+                    String href = (String)ite1.next();
+                    urlDiscovered.add(href);
+                }
+            }
             final List<Thread> threads = new ArrayList<>();
             final List<T> crawlers = new ArrayList<>();
 
@@ -125,13 +159,13 @@ public class SimpleController extends Configurable{
             final SimpleController controller = this;
             final CrawlConfig config = this.getConfig();
 
-            //Thread monitorThread = new Thread(new Runnable() {
+            Thread monitorThread = new Thread(new Runnable() {
 
-               // @Override
-               // public void run() {
+                @Override
+                public void run() {
                     try {
                         while (true) {
-                                sleep(config.getThreadMonitoringDelaySeconds());
+                                Thread.sleep(config.getThreadMonitoringDelaySeconds());
                                 boolean someoneIsWorking = false;
                                 for (int i = 0; i < threads.size(); i++) {
                                     Thread thread = threads.get(i);
@@ -161,7 +195,7 @@ public class SimpleController extends Configurable{
                                             "It looks like no thread is working, waiting for " +
                                                     config.getThreadShutdownDelaySeconds() +
                                                     " seconds to make sure...");
-                                    sleep(config.getThreadShutdownDelaySeconds());
+                                    Thread.sleep(config.getThreadShutdownDelaySeconds());
 
                                     someoneIsWorking = false;
                                     for (int i = 0; i < threads.size(); i++) {
@@ -182,7 +216,7 @@ public class SimpleController extends Configurable{
                                                             "queue waiting for another " +
                                                             config.getThreadShutdownDelaySeconds() +
                                                             " seconds to make sure...");
-                                            sleep(config.getThreadShutdownDelaySeconds());
+                                            Thread.sleep(config.getThreadShutdownDelaySeconds());
                                             //queueLength = frontier.getQueueLength();
                                             if (!queue.isEmpty()) {
                                                 continue;
@@ -194,7 +228,40 @@ public class SimpleController extends Configurable{
                                                         "process...");
                                         // At this step, frontier notifies the threads that were
                                         // waiting for new URLs and they should stop
-                                        after = System.nanoTime();
+                                        crawTime = (System.nanoTime() - before) / 1_000_000_000.0;
+                                        System.out.format("Finished in %fs.\n", crawTime);
+
+                                        if(shuttingDown&&!queue.isEmpty()){          //store the urls not visited for the next time
+                                            JSONObject resumeData = new JSONObject();
+                                            JSONArray queueData = new JSONArray();
+                                            WebURL data = queue.getNextURL();
+                                            while(data!=null){
+                                                //WebURL data = queue.getNextURL();
+                                                JSONObject urlJson  = new JSONObject();
+                                                urlJson.put("url",data.getURL());
+                                                urlJson.put("depth",data.getDepth());
+                                               // urlJson.put("tag",data.getTag());
+                                               // urlJson.put("parentUrl",data.getParentUrl());
+                                                urlJson.put("parentAnchor",data.getParentAnchor());
+                                                queueData.add(urlJson);
+                                                data = queue.getNextURL();
+                                            }
+
+                                            JSONArray baseData = new JSONArray();
+                                            Iterator<String> ite = urlDiscovered.getURLBase().iterator();
+                                            while(ite.hasNext()){
+                                                String href = ite.next();
+                                                //JSONObject urlJson = new JSONObject();
+                                                //urlJson.put("url",href);
+                                                baseData.add(href);
+                                            }
+                                            resumeData.put("queue",queueData);
+                                            resumeData.put("visited",baseData);
+                                            try (FileWriter file1 = new FileWriter(controller.getConfig().getCrawlStorageFolder()+"lastTime.json")) {
+                                                file1.write(resumeData.toJSONString());
+                                                System.out.println("Successfully stored urls not visited to File lastTime.json");
+                                            }
+                                        }
                                         queue.finish();   //finish workqueue, the crawlers will shutdown
 
                                         for (T crawler : crawlers) {
@@ -212,9 +279,18 @@ public class SimpleController extends Configurable{
                                         file.close();
 
                                         JSONObject resultJson = new JSONObject();
-                                        JSONArray nodes = new JSONArray();
-                                        JSONArray links = new JSONArray();
+                                        JSONArray nodes;
+                                        JSONArray links;
 
+                                        if(controller.getConfig().getResumable()){
+                                            Object graph = JSONValue.parse(new FileReader(controller.getConfig().getCrawlStorageFolder()+"resultJson.json"));
+                                            JSONObject graphJson = (JSONObject) graph;
+                                            nodes = (JSONArray) graphJson.get("nodes");
+                                            links = (JSONArray) graphJson.get("links");
+                                        }else{
+                                            nodes = new JSONArray();
+                                            links = new JSONArray();
+                                        }
                                         for (WebURL webURL : crawlersLocalData){
                                             JSONObject node = new JSONObject();
                                             node.put("id",webURL.getAnchor());
@@ -230,7 +306,6 @@ public class SimpleController extends Configurable{
                                         }
                                         resultJson.put("nodes",nodes);
                                         resultJson.put("links",links);
-
                                         try (FileWriter file1 = new FileWriter(controller.getConfig().getCrawlStorageFolder()+"resultJson.json")) {
                                             file1.write(resultJson.toJSONString());
                                             System.out.println("Successfully Copied JSON Object to File...");
@@ -242,7 +317,7 @@ public class SimpleController extends Configurable{
                                         logger.info(
                                                 "Waiting for " + config.getCleanupDelaySeconds() +
                                                         " seconds before final clean up...");
-                                        sleep(config.getCleanupDelaySeconds());
+                                        Thread.sleep(config.getCleanupDelaySeconds());
 
                                         pageFetcher.shutDown();
 
@@ -256,18 +331,13 @@ public class SimpleController extends Configurable{
                     } catch (Exception e) {
                         logger.error("Unexpected Error", e);
                     }
-               // };
-           // });
+                }
+            });
 
-           // monitorThread.start();
-           // monitorThread.join();
+            monitorThread.start();
 
-            /*if (isBlocking) {
-                waitUntilFinish();
-            }*/
+           // crawTime = (after - before) / 1_000_000_000.0;
 
-            double complexity = (after - before) / 1_000_000_000.0;
-            System.out.format("Finished in %fs.\n", complexity);
 
         } catch (Exception e) {
             logger.error("Error happened", e);
@@ -374,17 +444,9 @@ public class SimpleController extends Configurable{
         return this.urlDiscovered;
     }
 
-    /*public void setDocIdServer(UrlIdServer docIdServer) {
-        this.docIdServer = docIdServer;
-    }*/
-
-    /*public Object getCustomData() {
-        return customData;
-    }*/
-
-    /*public void setCustomData(Object customData) {
-        this.customData = customData;
-    }*/
+    public double getCrawTime(){
+        return this.crawTime;
+    }
 
     public boolean isFinished() {
         return this.finished;
@@ -419,7 +481,7 @@ public class SimpleController extends Configurable{
         config.setMaxDepthOfCrawling(maxDepth);
 
         PageFetcher pageFetcher = new PageFetcher(config);
-        SimpleController controller = new SimpleController(config, pageFetcher);
+        SimpleController controller = new SimpleController(config, pageFetcher,"LockFreeQueue");
 
         controller.addSeed("http://starwars.wikia.com/wiki/Yoda");
         //controller.addSeed("http://www.ics.uci.edu/~welling/");

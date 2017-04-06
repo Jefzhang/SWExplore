@@ -88,9 +88,9 @@ public class Parser extends Configurable{
                 int urlCount = 0;
 
                 //Select outgoing urls
-                for (UrlTagPair urlAnchorPair : contentHandler.getOutgoingUrls()) {
+                for (String href: contentHandler.getOutgoingUrls()) {
 
-                    String href = urlAnchorPair.getHref();
+                    //String href = urlAnchorPair.getHref();
                     if ((href == null) || href.trim().isEmpty()) {
                         continue;
                     }
@@ -106,7 +106,7 @@ public class Parser extends Configurable{
                         if (url != null) {
                             WebURL webURL = new WebURL();
                             webURL.setURL(url);
-                            webURL.setTag(urlAnchorPair.getTag());
+                           // webURL.setTag(urlAnchorPair.getTag());
                             //webURL.setAnchor(urlAnchorPair.getAnchor());
                             outgoingUrls.add(webURL);
                             urlCount++;

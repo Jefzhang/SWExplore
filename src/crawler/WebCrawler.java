@@ -13,7 +13,6 @@ import multithread.WebUrlQueues;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import parser.HtmlParseData;
 import parser.Parser;
 import parser.ParseData;
 
@@ -21,17 +20,8 @@ import fetcher.PageFetcher;
 import fetcher.PageFetchResult;
 import url.WebURL;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
-
-
-
-import multithread.Frontier;
-
-
-
 
 
 public class WebCrawler implements Runnable{
@@ -236,7 +226,7 @@ public class WebCrawler implements Runnable{
         while (true) {
             List<WebURL> assignedURLs = new ArrayList<>(10);           //get next 10 urls
             isWaitingForNewURLs = true;
-            queue.getNextURLs(10, assignedURLs);
+            queue.getNextURLs(1, assignedURLs);
             if (assignedURLs.isEmpty()) {
                 if (queue.isFinished()) {                         //shut down this crawler when there is no more url
                     return;
@@ -373,7 +363,7 @@ public class WebCrawler implements Runnable{
                     int maxCrawlDepth = myController.getConfig().getMaxDepthOfCrawling();
                     for (WebURL webURL : parseData.getOutgoingUrls()) {
                         //webURL.setParentDocid(curURL.getDocid());
-                        webURL.setParentUrl(curURL.getURL());
+                       // webURL.setParentUrl(curURL.getURL());
                         webURL.setParentAnchor(curURL.getAnchor());
                         webURL.setDepth((short) (curURL.getDepth() + 1));
                         //if (urlBase.contains(webURL.getURL()) || ) {

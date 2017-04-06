@@ -59,9 +59,9 @@ public class HtmlContentHandler extends DefaultHandler{
     private final StringBuilder menuText;
     private final StringBuilder headText;
 
-    private final List<UrlTagPair> outgoingUrls;
+    private final List<String> outgoingUrls;
 
-    private UrlTagPair curUrl = null;
+   // private UrlTagPair curUrl = null;
     private boolean anchorFlag = false;
     private final StringBuilder anchorText = new StringBuilder();
 
@@ -103,7 +103,7 @@ public class HtmlContentHandler extends DefaultHandler{
                 String href = attributes.getValue("href");
                 if (href != null) {
                     //anchorFlag = true;
-                    addToOutgoingUrls(href, localName);
+                    addToOutgoingUrls(href);
                 }
             }
         }else if(element == Element.BODY)
@@ -119,11 +119,11 @@ public class HtmlContentHandler extends DefaultHandler{
         }
     }
 
-    private void addToOutgoingUrls(String href, String tag) {
-        curUrl = new UrlTagPair();
-        curUrl.setHref(href);
-        curUrl.setTag(tag);
-        outgoingUrls.add(curUrl);
+    private void addToOutgoingUrls(String href) {
+       // curUrl = new UrlTagPair();
+       // curUrl.setHref(href);
+       // curUrl.setTag(tag);
+        outgoingUrls.add(href);
     }
 
     @Override
@@ -143,7 +143,7 @@ public class HtmlContentHandler extends DefaultHandler{
                     }
                     anchorText.delete(0, anchorText.length());
                 }*/
-                curUrl = null;}
+                }
             else if (element==Element.BODY)
                 isWithinBodyElement = false;
             else if (element==Element.H2)
@@ -199,7 +199,7 @@ public class HtmlContentHandler extends DefaultHandler{
         return menuText.toString().replaceAll("\n", " ").replaceAll("\t", " ").trim();
     }
 
-    public List<UrlTagPair> getOutgoingUrls() {
+    public List<String> getOutgoingUrls() {
         return outgoingUrls;
     }
 

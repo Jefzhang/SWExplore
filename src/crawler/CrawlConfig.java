@@ -18,6 +18,11 @@ import java.util.List;
 public class CrawlConfig {
 
     /**
+     * If this is set to true, crawler
+     */
+    private boolean resumable = false;
+
+    /**
      * The folder which will be used by crawler for storing the intermediate
      * crawl data. The content of this folder should not be modified manually.
      */
@@ -167,6 +172,14 @@ public class CrawlConfig {
         if (maxDepthOfCrawling > Short.MAX_VALUE) {
             throw new Exception("Maximum value for crawl depth is " + Short.MAX_VALUE);
         }
+    }
+
+    public boolean getResumable(){
+        return this.resumable;
+    }
+
+    public void setResumable(boolean isResumable){
+        this.resumable = isResumable;
     }
 
     public String getCrawlStorageFolder() {
