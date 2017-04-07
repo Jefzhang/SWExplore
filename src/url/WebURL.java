@@ -176,7 +176,7 @@ public class WebURL implements Serializable{
 
     @Override
     public String toString() {
-        return this.anchor+": "+this.depth+" "+this.url+"\n";
+        return this.anchor+": "+this.depth+" "+"\n";
     }
 
 }

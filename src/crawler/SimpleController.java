@@ -57,6 +57,7 @@ public class SimpleController extends Configurable{
     protected WebUrlQueues<WebURL> queue;
     protected UrlDiscovered urlDiscovered;
     protected double crawTime;
+   //public ArrayList<String> message;
 
     public SimpleController(CrawlConfig config, PageFetcher pageFetcher, String queueType) {
         super(config);
@@ -66,12 +67,16 @@ public class SimpleController extends Configurable{
             queue = new LockFreeQueue<WebURL>();
         }else if(queueType.equals("BlockingQueue")){
             queue = new SimpleBlockingQueue<WebURL>();
+        }else if(queueType.equals("Java-BlockingQueue")){
+            queue = new JavaBlockingQueue<>();
+        }else{
+            queue = new JavaConcurrentQueue<>();
         }
-
         this.pageFetcher = pageFetcher;
         finished = false;
         shuttingDown = false;
         crawTime = 0;
+      //  message = new ArrayList<>();
     }
 
     public interface WebCrawlerFactory<T extends WebCrawler> {
@@ -126,13 +131,7 @@ public class SimpleController extends Configurable{
                     System.out.println((String)dataJson.get("url"));
                     Long depth = (Long) dataJson.get("depth");
                     url.setDepth(depth.shortValue());
-                   // System.out.println((short)dataJson.get("depth"));
-
-                    //url.setParentUrl((String)dataJson.get("parentUrl"));
                     url.setParentAnchor((String)dataJson.get("parentAnchor"));
-
-                    System.out.println(url.toString());
-                    //url.setTag((String)dataJson.get("tag"));
                     queue.schedule(url);
                 }
 
@@ -141,6 +140,7 @@ public class SimpleController extends Configurable{
                     String href = (String)ite1.next();
                     urlDiscovered.add(href);
                 }
+                System.out.println("Successfully load data of the last time from lastTime.json");
             }
             final List<Thread> threads = new ArrayList<>();
             final List<T> crawlers = new ArrayList<>();
@@ -229,7 +229,7 @@ public class SimpleController extends Configurable{
                                         // At this step, frontier notifies the threads that were
                                         // waiting for new URLs and they should stop
                                         crawTime = (System.nanoTime() - before) / 1_000_000_000.0;
-                                        System.out.format("Finished in %fs.\n", crawTime);
+                                        System.out.format("Finished within %fs.\n", crawTime);
 
                                         if(shuttingDown&&!queue.isEmpty()){          //store the urls not visited for the next time
                                             JSONObject resumeData = new JSONObject();
@@ -259,7 +259,7 @@ public class SimpleController extends Configurable{
                                             resumeData.put("visited",baseData);
                                             try (FileWriter file1 = new FileWriter(controller.getConfig().getCrawlStorageFolder()+"lastTime.json")) {
                                                 file1.write(resumeData.toJSONString());
-                                                System.out.println("Successfully stored urls not visited to File lastTime.json");
+                                                System.out.println("Successfully stored urls to File lastTime.json");
                                             }
                                         }
                                         queue.finish();   //finish workqueue, the crawlers will shutdown
@@ -308,12 +308,8 @@ public class SimpleController extends Configurable{
                                         resultJson.put("links",links);
                                         try (FileWriter file1 = new FileWriter(controller.getConfig().getCrawlStorageFolder()+"resultJson.json")) {
                                             file1.write(resultJson.toJSONString());
-                                            System.out.println("Successfully Copied JSON Object to File...");
-                                            //System.out.println("\nJSON Object: " + obj);
+                                            System.out.println("Successfully wrote characters found to resultJson.json and output.txt");
                                         }
-
-
-
                                         logger.info(
                                                 "Waiting for " + config.getCleanupDelaySeconds() +
                                                         " seconds before final clean up...");

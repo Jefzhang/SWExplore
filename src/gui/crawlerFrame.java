@@ -15,8 +15,11 @@ public class crawlerFrame extends JFrame {
     private static JComboBox DataStructure;
     private static JTextField politeDelay;
     private static JCheckBox resume;
+    //static JTextArea namelist;
     public static String[] parameters = new String[4]; //parameters for the crawlers (name, depth, DataStructure)
     static SimpleController controller;
+
+    static boolean isEnd = false;
 
 
 
@@ -27,7 +30,7 @@ public class crawlerFrame extends JFrame {
     static void CreateInputPanel(){
         inputPanel = new JPanel();
         inputPanel.setLayout(new BoxLayout(inputPanel, BoxLayout.X_AXIS));
-        inputPanel.add(Box.createHorizontalStrut(10));
+        //inputPanel.add(Box.createHorizontalStrut(10));
         JLabel lbname = new JLabel("Character:");
         lbname.setAlignmentY(Component.CENTER_ALIGNMENT);
        // lbname.setBorder(BorderFactory.createEmptyBorder(30, 5, 0, 5));
@@ -38,8 +41,8 @@ public class crawlerFrame extends JFrame {
         NamePanel.setLayout(new BoxLayout(NamePanel, BoxLayout.X_AXIS));
         NamePanel.add(lbname);
         NamePanel.add(name);
-        NamePanel.setAlignmentY(Component.CENTER_ALIGNMENT);
-        NamePanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+        NamePanel.setAlignmentY(Component.TOP_ALIGNMENT);
+        NamePanel.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 5));
         inputPanel.add(NamePanel);
 
         JLabel lbdepth = new JLabel("Depth:");
@@ -52,8 +55,8 @@ public class crawlerFrame extends JFrame {
         DepthPanel.setLayout(new BoxLayout(DepthPanel, BoxLayout.X_AXIS));
         DepthPanel.add(lbdepth);
         DepthPanel.add(depth);
-        DepthPanel.setAlignmentY(Component.CENTER_ALIGNMENT);
-        DepthPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+        DepthPanel.setAlignmentY(Component.TOP_ALIGNMENT);
+        DepthPanel.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 5));
         inputPanel.add(DepthPanel);
 
         JLabel politessDelay = new JLabel("Politeness Delay:");
@@ -65,8 +68,8 @@ public class crawlerFrame extends JFrame {
         delayPanel.setLayout(new BoxLayout(delayPanel,BoxLayout.LINE_AXIS));
         delayPanel.add(politessDelay);
         delayPanel.add(politeDelay);
-        delayPanel.setAlignmentY(Component.CENTER_ALIGNMENT);
-        delayPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+        delayPanel.setAlignmentY(Component.TOP_ALIGNMENT);
+        delayPanel.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 5));
         inputPanel.add(delayPanel);
 
 
@@ -83,8 +86,8 @@ public class crawlerFrame extends JFrame {
         DataStructurePanel.setLayout(new BoxLayout(DataStructurePanel, BoxLayout.X_AXIS));
         DataStructurePanel.add(lbData);
         DataStructurePanel.add(DataStructure);
-        DataStructurePanel.setAlignmentY(Component.CENTER_ALIGNMENT);
-        DataStructurePanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+        DataStructurePanel.setAlignmentY(Component.TOP_ALIGNMENT);
+        DataStructurePanel.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 5));
         inputPanel.add(DataStructurePanel);
 
         /*
@@ -114,21 +117,21 @@ public class crawlerFrame extends JFrame {
     static void CreateCountPanel(){
         CountPanel = new JPanel();
         CountPanel.setLayout(new BoxLayout(CountPanel, BoxLayout.X_AXIS));
-        JTextArea namelist = new JTextArea(120,80);
+        //namelist = new JTextArea(120,80);
         JButton start = new JButton("Start");
         JButton stop = new JButton("Stop");
         resume = new JCheckBox("Resume");
         resume.setSelected(false);
 
         JPanel ButtonPanel = new JPanel();
-        ButtonPanel.setLayout(new BoxLayout(ButtonPanel, BoxLayout.Y_AXIS));
+        ButtonPanel.setLayout(new BoxLayout(ButtonPanel, BoxLayout.X_AXIS));
         ButtonPanel.add(resume);
         ButtonPanel.add(start);
         ButtonPanel.add(stop);
-        ButtonPanel.setBorder(BorderFactory.createEmptyBorder(200, 15, 15, 15));
+        ButtonPanel.setBorder(BorderFactory.createEmptyBorder(0, 15, 0, 15));
         CountPanel.add(ButtonPanel);
 
-        JLabel lbresult = new JLabel("Characters: ");
+        /*JLabel lbresult = new JLabel("Characters: ");
         lbresult.setAlignmentY(Component.CENTER_ALIGNMENT);
         lbresult.setBorder(BorderFactory.createEmptyBorder(300, 5, 0, 5));
 
@@ -141,7 +144,7 @@ public class crawlerFrame extends JFrame {
         resultPanel.add(namelistScroller);
         resultPanel.setAlignmentY(Component.TOP_ALIGNMENT);
         resultPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 3));
-        CountPanel.add(resultPanel);
+        CountPanel.add(resultPanel);*/
 
         start.addActionListener(new ActionListener(){
             @Override
@@ -159,8 +162,8 @@ public class crawlerFrame extends JFrame {
                 int maxDepth = Integer.parseInt(parameters[1]);
                 int politeDelay = Integer.parseInt(parameters[2]);
 
-                namelist.append("Crawler process start...\n\r");
-                namelist.append("Using "+numofCrawlers+" threads...\n\r");
+               System.out.println("Crawler process start...\n\r");
+               System.out.println("Using "+numofCrawlers+" threads...\n\r");
 
 
                 CrawlConfig config = new CrawlConfig();
@@ -181,8 +184,8 @@ public class crawlerFrame extends JFrame {
         stop.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                System.out.println("Process stopped by user\n\r");
                 controller.shutdown();
-                namelist.append("Process stopped ");
             }
         });
 
@@ -225,22 +228,12 @@ public class crawlerFrame extends JFrame {
         c2.fill = GridBagConstraints.BOTH;
         panelContainer.add(CountPanel, c2);
 
-        /*GridBagConstraints c3 = new GridBagConstraints();
-        c3.gridx = 0;
-        c3.gridy = 2;
-        c3.weightx = 1.0;
-        c3.weighty = 0;
-        c3.fill = GridBagConstraints.HORIZONTAL;
-        panelContainer.add(outputPanel, c3);*/
-
         JFrame SWFrame = new JFrame("Star War Character Search");
         SWFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         panelContainer.setOpaque(true);
-        SWFrame.setSize(new Dimension(700, 600));
+        SWFrame.setSize(new Dimension(700, 200));
         SWFrame.setContentPane(panelContainer);
         SWFrame.setVisible(true);
-
-
 
 
 
