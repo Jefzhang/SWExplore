@@ -56,6 +56,7 @@ public class SimpleController extends Configurable{
     protected PageFetcher pageFetcher;
     protected WebUrlQueues<WebURL> queue;
     protected UrlDiscovered urlDiscovered;
+    protected int numPagesVisited;
     protected double crawTime;
    //public ArrayList<String> message;
 
@@ -76,6 +77,7 @@ public class SimpleController extends Configurable{
         finished = false;
         shuttingDown = false;
         crawTime = 0;
+        numPagesVisited = 0;
       //  message = new ArrayList<>();
     }
 
@@ -110,15 +112,12 @@ public class SimpleController extends Configurable{
                                                 final int numberOfCrawlers) {
         try {
 
-            long before = System.nanoTime();
-            long after = System.nanoTime();
+
             finished = false;
             crawlersLocalData.clear();
             if(this.config.getResumable()){                    //load all the urls not-visited of last time
                 Object obj = JSONValue.parse(new FileReader(config.getCrawlStorageFolder()+"lastTime.json"));
                 JSONObject resumeData = (JSONObject) obj;
-                //System.out.println(urlJson.iterator().toString());
-                //System.out.println(urlJson);
                 JSONArray queueData = (JSONArray) resumeData.get("queue");
                 JSONArray visited = (JSONArray) resumeData.get("visited");
 
@@ -156,6 +155,7 @@ public class SimpleController extends Configurable{
                 logger.info("Crawler {} started", i);
             }
 
+            long before = System.nanoTime();
             final SimpleController controller = this;
             final CrawlConfig config = this.getConfig();
 
@@ -229,19 +229,17 @@ public class SimpleController extends Configurable{
                                         // At this step, frontier notifies the threads that were
                                         // waiting for new URLs and they should stop
                                         crawTime = (System.nanoTime() - before) / 1_000_000_000.0;
-                                        System.out.format("Finished within %fs.\n", crawTime);
+                                        queue.finish();   //finish workqueue, the crawlers will shutdown
+
 
                                         if(shuttingDown&&!queue.isEmpty()){          //store the urls not visited for the next time
                                             JSONObject resumeData = new JSONObject();
                                             JSONArray queueData = new JSONArray();
                                             WebURL data = queue.getNextURL();
                                             while(data!=null){
-                                                //WebURL data = queue.getNextURL();
                                                 JSONObject urlJson  = new JSONObject();
                                                 urlJson.put("url",data.getURL());
                                                 urlJson.put("depth",data.getDepth());
-                                               // urlJson.put("tag",data.getTag());
-                                               // urlJson.put("parentUrl",data.getParentUrl());
                                                 urlJson.put("parentAnchor",data.getParentAnchor());
                                                 queueData.add(urlJson);
                                                 data = queue.getNextURL();
@@ -251,8 +249,6 @@ public class SimpleController extends Configurable{
                                             Iterator<String> ite = urlDiscovered.getURLBase().iterator();
                                             while(ite.hasNext()){
                                                 String href = ite.next();
-                                                //JSONObject urlJson = new JSONObject();
-                                                //urlJson.put("url",href);
                                                 baseData.add(href);
                                             }
                                             resumeData.put("queue",queueData);
@@ -262,10 +258,9 @@ public class SimpleController extends Configurable{
                                                 System.out.println("Successfully stored urls to File lastTime.json");
                                             }
                                         }
-                                        queue.finish();   //finish workqueue, the crawlers will shutdown
 
                                         for (T crawler : crawlers) {
-                                            crawler.onBeforeExit();
+                                            numPagesVisited +=crawler.getNumPagesVisited();
                                             crawlersLocalData.addAll(crawler.getMyLocalData());
                                         }
 
@@ -310,6 +305,8 @@ public class SimpleController extends Configurable{
                                             file1.write(resultJson.toJSONString());
                                             System.out.println("Successfully wrote characters found to resultJson.json and output.txt");
                                         }
+                                        System.out.format("Process finished within %fs.\n", crawTime);
+                                        System.out.format("Visited %d pages and got %d new characters\n",numPagesVisited,crawlersLocalData.size());
                                         logger.info(
                                                 "Waiting for " + config.getCleanupDelaySeconds() +
                                                         " seconds before final clean up...");
@@ -331,9 +328,6 @@ public class SimpleController extends Configurable{
             });
 
             monitorThread.start();
-
-           // crawTime = (after - before) / 1_000_000_000.0;
-
 
         } catch (Exception e) {
             logger.error("Error happened", e);
@@ -363,36 +357,7 @@ public class SimpleController extends Configurable{
         }
     }*/
 
-    /**
-     * Adds a new seed URL. A seed URL is a URL that is fetched by the crawler
-     * to extract new URLs in it and follow them for crawling.
-     *
-     * @param pageUrl
-     *            the URL of the seed
-     */
-    /*public void addSeed(String pageUrl) {
-        addSeed(pageUrl, -1);
-    }*/
 
-    /**
-     * Adds a new seed URL. A seed URL is a URL that is fetched by the crawler
-     * to extract new URLs in it and follow them for crawling. You can also
-     * specify a specific document id to be assigned to this seed URL. This
-     * document id needs to be unique. Also, note that if you add three seeds
-     * with document ids 1,2, and 7. Then the next URL that is found during the
-     * crawl will get a doc id of 8. Also you need to ensure to add seeds in
-     * increasing order of document ids.
-     *
-     * Specifying doc ids is mainly useful when you have had a previous crawl
-     * and have stored the results and want to start a new crawl with seeds
-     * which get the same document ids as the previous crawl.
-     *
-     * @param pageUrl
-     *            the URL of the seed
-
-     *            the document id that you want to be assigned to this seed URL.
-     *
-     */
     public void addSeed(String pageUrl) {
         String canonicalUrl = URLnormlization.getCanonicalURL(pageUrl);
         if (canonicalUrl == null) {
@@ -411,9 +376,7 @@ public class SimpleController extends Configurable{
 
             WebURL webUrl = new WebURL();
             webUrl.setURL(canonicalUrl);
-            //webUrl.setDocid(docId);
             webUrl.setDepth((short) 0);
-            //if (robotstxtServer.allows(webUrl)) {
             this.queue.schedule(webUrl);
         }
     }
@@ -432,9 +395,6 @@ public class SimpleController extends Configurable{
         return this.queue;
     }
 
-    /*public void setFrontier(WebUrlQueues frontier) {
-        this.frontier = frontier;
-    }*/
 
     public UrlDiscovered getUrlBase() {
         return this.urlDiscovered;
@@ -463,44 +423,5 @@ public class SimpleController extends Configurable{
         pageFetcher.shutDown();
         queue.finish();
     }
-
-    public static void main(String []args)throws Exception{
-
-        String folder = "./data/";
-        int numofCrawlers = Runtime.getRuntime().availableProcessors();
-        int maxDepth = 1;
-
-
-
-        CrawlConfig config = new CrawlConfig();
-        config.setCrawlStorageFolder(folder);
-        config.setMaxDepthOfCrawling(maxDepth);
-
-        PageFetcher pageFetcher = new PageFetcher(config);
-        SimpleController controller = new SimpleController(config, pageFetcher,"LockFreeQueue");
-
-        controller.addSeed("http://starwars.wikia.com/wiki/Yoda");
-        //controller.addSeed("http://www.ics.uci.edu/~welling/");
-        //controller.addSeed("http://www.ics.uci.edu/");
-
-        /*
-         * Start the crawl. This is a blocking operation, meaning that your code
-         * will reach the line after this only when crawling is finished.
-         */
-        controller.start(WebCrawler.class, numofCrawlers);
-
-
-
-    }
-
-
-
-
-
-
-
-
-
-
 
 }

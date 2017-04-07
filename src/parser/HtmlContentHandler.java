@@ -44,8 +44,6 @@ public class HtmlContentHandler extends DefaultHandler{
     }
 
     private String base;
-    private String metaRefresh;
-    private String metaLocation;
     private final Map<String, String> metaTags = new HashMap<>();
     private String webTitle;
     private volatile boolean isWithinBodyElement;
@@ -53,8 +51,6 @@ public class HtmlContentHandler extends DefaultHandler{
     private volatile boolean isWithinHead;
     private boolean isWithinh2;
     private boolean isWithinh1;
-    private boolean hasBiography;
-    private boolean hasPersonality;
 
     private final StringBuilder menuText;
     private final StringBuilder headText;
@@ -71,8 +67,6 @@ public class HtmlContentHandler extends DefaultHandler{
         isWithinHead = false;
         isWithinh1 = false;
         isWithinh2 = false;
-        hasBiography = false;
-        hasPersonality = false;
         menuText = new StringBuilder();
         headText = new StringBuilder();
         outgoingUrls = new ArrayList<>();
@@ -82,27 +76,11 @@ public class HtmlContentHandler extends DefaultHandler{
 
     public void startElement(String uri, String localName, String qName, Attributes attributes)
     throws SAXException {
-        //System.out.println(qName);
         Element element = HtmlFactory.getElement(qName);
-        //System.out.println("start an element");
-
-        /*if (element == Element.A) {           //read href
-            if (isWithinBodyElement) {         //only read the links in body part
-                String href = attributes.getValue("href");
-                if (href != null) {
-                    anchorFlag = true;
-                    addToOutgoingUrls(href, localName);
-                }
-            }
-        } else if (element == Element.BODY) {
-            isWithinBodyElement = true;
-        }*/
         if(element == Element.A) {
-            //System.out.println("enter an element a");
             if (isWithinBodyElement && !isWithinScript) {
                 String href = attributes.getValue("href");
                 if (href != null) {
-                    //anchorFlag = true;
                     addToOutgoingUrls(href);
                 }
             }
@@ -120,31 +98,13 @@ public class HtmlContentHandler extends DefaultHandler{
     }
 
     private void addToOutgoingUrls(String href) {
-       // curUrl = new UrlTagPair();
-       // curUrl.setHref(href);
-       // curUrl.setTag(tag);
         outgoingUrls.add(href);
     }
 
     @Override
     public void endElement(String uri, String localName, String qName){
         Element element = HtmlFactory.getElement(qName);
-            if(element == Element.A){
-                //anchorFlag = false;
-                /*if (curUrl != null) {
-                    String anchor =
-                            anchorText.toString().replaceAll("\n", " ").replaceAll("\t", " ").trim();
-                    if (!anchor.isEmpty()) {
-                        if (anchor.length() > MAX_ANCHOR_LENGTH) {
-                            anchor = anchor.substring(0, MAX_ANCHOR_LENGTH) + "...";
-                        }
-                        curUrl.setTag(localName);
-                        curUrl.setAnchor(anchor);
-                    }
-                    anchorText.delete(0, anchorText.length());
-                }*/
-                }
-            else if (element==Element.BODY)
+            if (element==Element.BODY)
                 isWithinBodyElement = false;
             else if (element==Element.H2)
                 isWithinh2 = false;
@@ -169,25 +129,12 @@ public class HtmlContentHandler extends DefaultHandler{
                 menuText.append(' ');
             }
             menuText.append(ch, start, length);
-
-            /*if(isWithh2){
-                if (new String(ch).contains("Biography")) hasBiography = true;
-                if (new String(ch).contains("Personality")) hasPersonality = true;
-            }*/
         }
         if(isWithinBodyElement){
             if (anchorFlag) {
                 anchorText.append(new String(ch, start, length));
             }
         }
-        /*if(isWithinScript){
-            if(headText.length() > 0){
-                headText.append(' ');
-            }
-            //System.out.println(new String(ch));
-            headText.append(new String(ch,start,length));
-        }*/
-       // System.out.print(ch.toString());
     }
 
     @Override
@@ -209,22 +156,6 @@ public class HtmlContentHandler extends DefaultHandler{
 
     public String getWebTitle(){
         return this.webTitle;
-    }
-
-    public String getScriptText(){
-        return headText.toString().replaceAll("\n"," ").replaceAll("\t"," ").trim();
-    }
-
-    public boolean DoeshaveBiography(){
-        return this.hasBiography;
-    }
-
-    public boolean DoeshavePersonality(){
-        return this.hasPersonality;
-    }
-
-    public Map<String, String> getMetaTags() {
-        return metaTags;
     }
 
 }

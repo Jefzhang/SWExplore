@@ -48,31 +48,18 @@ public class Parser extends Configurable{
     {
             Metadata metadata = new Metadata();
             HtmlContentHandler contentHandler = new HtmlContentHandler();
-            //System.out.println(page.getContentData().toString());
             try (InputStream inputStream = new ByteArrayInputStream(page.getContentData())) {
                 htmlParser.parse(inputStream, contentHandler, metadata, parseContext);
             } catch (Exception e) {
-
-                logger.error("{}, while parsing: {}", e.getMessage(), page.getWebURL().getURL());
-                //logger.error("type of exception:{}",e.toString());
-                throw new ParseException();
+               // throw new ParseException();
             }
-           // System.out.println(metadata.toString());
-            //System.out.println(parseContext.toString());
             if (page.getContentCharset() == null) {
                 page.setContentCharset(metadata.get("Content-Encoding"));
             }
-            System.out.println(contentHandler.getWebTitle());
             page.getWebURL().setAnchor(contentHandler.getWebTitle());
             HtmlParseData parseData = new HtmlParseData();
             parseData.setText(contentHandler.getMenuText().trim());
             parseData.setTitle(metadata.get(DublinCore.TITLE));
-            //parseData.setMetaTags(contentHandler.getMetaTags());
-            // Please note that identifying language takes less than 10 milliseconds
-
-            //LanguageIdentifier languageIdentifier = new LanguageIdentifier(parseData.getText());
-            //page.setLanguage(languageIdentifier.getLanguage());
-
             Set<WebURL> outgoingUrls = new HashSet<>();
 
             String baseURL = contentHandler.getBaseUrl();
@@ -89,8 +76,6 @@ public class Parser extends Configurable{
 
                 //Select outgoing urls
                 for (String href: contentHandler.getOutgoingUrls()) {
-
-                    //String href = urlAnchorPair.getHref();
                     if ((href == null) || href.trim().isEmpty()) {
                         continue;
                     }
@@ -99,15 +84,11 @@ public class Parser extends Configurable{
                     //String hrefLoweredCase = href.trim().toLowerCase();
                     String url = URLnormlization.getCanonicalURL(href, contextURL);
                     String hrefLoweredCase = url.trim().toLowerCase();
-                    //url = url.trim().toLowerCase();
-                    //System.out.println(url);
                     if (Util.isRelatedPage(hrefLoweredCase)) {
                         //String url = URLnormlization.getCanonicalURL(href, contextURL);
                         if (url != null) {
                             WebURL webURL = new WebURL();
                             webURL.setURL(url);
-                           // webURL.setTag(urlAnchorPair.getTag());
-                            //webURL.setAnchor(urlAnchorPair.getAnchor());
                             outgoingUrls.add(webURL);
                             urlCount++;
                             if (urlCount > config.getMaxOutgoingLinksToFollow()) {
@@ -141,13 +122,8 @@ public class Parser extends Configurable{
         boolean hasCharacter = menutext.matches("(.*)Characteristic(.*)");
         if(hasBiography) count+=3;
         if(hasPersonality||hasCharacter) count+=1;
-        System.out.println(count);
         if(count>=4) return true;
         if((count>=3)&&(Math.random()>=0.25)) return true;
         else return false;
-       /*String headText = handler.getBodyText();
-       System.out.println(headText);
-       return headText.matches("(.*)wgArticleType=\"character\"(.*)");*/
-
     }
 }

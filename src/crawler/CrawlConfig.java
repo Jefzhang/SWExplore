@@ -4,7 +4,6 @@ package crawler;
  * Created by jfzhang on 02/03/2017.
  */
 
-//import edu.uci.ics.crawler4j.crawler.authentication.AuthInfo;
 import org.apache.http.Header;
 import org.apache.http.message.BasicHeader;
 
@@ -27,20 +26,6 @@ public class CrawlConfig {
      * crawl data. The content of this folder should not be modified manually.
      */
     private String crawlStorageFolder;
-
-    /**
-     * The data structure which will be used for storing the url
-     * 1 : concurrency database (simply synchronised operation)
-     * 2 : lockfree queues
-     */
-    private int urlStorageType;
-
-
-    /**
-     * The data structure which will be used for storing all the visited urls
-     * 1 : simply synchronised operations with a hashmap
-     */
-    private int urlServerType;
 
 
     /**
@@ -82,10 +67,6 @@ public class CrawlConfig {
      */
     private boolean includeBinaryContentInCrawling = false;
 
-    /**
-     * Should we process binary content such as image, audio, ... using TIKA?
-     */
-    private boolean processBinaryContentInCrawling = false;
 
     /**
      * Maximum Connections per host
@@ -122,13 +103,6 @@ public class CrawlConfig {
      * Should we follow redirects?
      */
     private boolean followRedirects = true;
-
-    /**
-     * Should the TLD list be updated automatically on each run? Alternatively,
-     * it can be loaded from the embedded tld-names.zip file that was obtained from
-     * https://publicsuffix.org/list/effective_tld_names.dat
-     */
-    private boolean onlineTldListUpdate = false;
 
     /**
      * Should the crawler stop running when the queue is empty?
@@ -197,32 +171,6 @@ public class CrawlConfig {
     }
 
 
-
-    public int getUrlStorageType() {
-        return urlStorageType;
-    }
-
-    /**
-     * Choose the data structure used for storing all the intermediate urls
-     * @param type The type de data structure used for storing the urls, 1 or 2
-     */
-    public void setUrlStorageType(int type){
-        this.urlStorageType = type;
-    }
-
-    public int getUrlServerType() {
-        return urlServerType;
-    }
-
-    /**
-     * Choose the data structure used for storing all the visited urls
-     * @param type 1 stand for simple synchronised hashmap
-     */
-    public void setUrlServerType(int type) {
-        this.urlServerType = type;
-    }
-
-
     public int getMaxDepthOfCrawling() {
         return maxDepthOfCrawling;
     }
@@ -258,15 +206,6 @@ public class CrawlConfig {
         return userAgentString;
     }
 
-    /**
-     * user-agent string that is used for representing your crawler to web
-     * servers. See http://en.wikipedia.org/wiki/User_agent for more details
-     *
-     * @param userAgentString Custom userAgent string to use as your crawler's identifier
-     */
-    public void setUserAgentString(String userAgentString) {
-        this.userAgentString = userAgentString;
-    }
 
     /**
      * Return a copy of the default header collection.
@@ -275,16 +214,6 @@ public class CrawlConfig {
         return new HashSet<>(defaultHeaders);
     }
 
-    /**
-     * Set the default header collection (creating copies of the provided headers).
-     */
-    public void setDefaultHeaders(Collection<? extends Header> defaultHeaders) {
-        Collection<BasicHeader> copiedHeaders = new HashSet<>();
-        for (Header header : defaultHeaders) {
-            copiedHeaders.add(new BasicHeader(header.getName(), header.getValue()));
-        }
-        this.defaultHeaders = copiedHeaders;
-    }
 
     public int getPolitenessDelay() {
         return politenessDelay;
@@ -305,137 +234,51 @@ public class CrawlConfig {
         return includeHttpsPages;
     }
 
-    /**
-     * @param includeHttpsPages Should we crawl https pages?
-     */
-    public void setIncludeHttpsPages(boolean includeHttpsPages) {
-        this.includeHttpsPages = includeHttpsPages;
-    }
+
 
     public boolean isIncludeBinaryContentInCrawling() {
         return includeBinaryContentInCrawling;
     }
 
-    /**
-     *
-     * @param includeBinaryContentInCrawling Should we fetch binary content such as images,
-     * audio, ...?
-     */
-    public void setIncludeBinaryContentInCrawling(boolean includeBinaryContentInCrawling) {
-        this.includeBinaryContentInCrawling = includeBinaryContentInCrawling;
-    }
 
-    public boolean isProcessBinaryContentInCrawling() {
-        return processBinaryContentInCrawling;
-    }
-
-    /**
-     * Should we process binary content such as images, audio, ... using TIKA?
-     */
-    public void setProcessBinaryContentInCrawling(boolean processBinaryContentInCrawling) {
-        this.processBinaryContentInCrawling = processBinaryContentInCrawling;
-    }
 
     public int getMaxConnectionsPerHost() {
         return maxConnectionsPerHost;
     }
 
-    /**
-     * @param maxConnectionsPerHost Maximum Connections per host
-     */
-    public void setMaxConnectionsPerHost(int maxConnectionsPerHost) {
-        this.maxConnectionsPerHost = maxConnectionsPerHost;
-    }
 
     public int getMaxTotalConnections() {
         return maxTotalConnections;
     }
 
-    /**
-     * @param maxTotalConnections Maximum total connections
-     */
-    public void setMaxTotalConnections(int maxTotalConnections) {
-        this.maxTotalConnections = maxTotalConnections;
-    }
 
     public int getSocketTimeout() {
         return socketTimeout;
     }
 
-    /**
-     * @param socketTimeout Socket timeout in milliseconds
-     */
-    public void setSocketTimeout(int socketTimeout) {
-        this.socketTimeout = socketTimeout;
-    }
 
     public int getConnectionTimeout() {
         return connectionTimeout;
     }
 
-    /**
-     * @param connectionTimeout Connection timeout in milliseconds
-     */
-    public void setConnectionTimeout(int connectionTimeout) {
-        this.connectionTimeout = connectionTimeout;
-    }
 
     public int getMaxOutgoingLinksToFollow() {
         return maxOutgoingLinksToFollow;
     }
 
-    /**
-     * @param maxOutgoingLinksToFollow Max number of outgoing links which are processed from a page
-     */
-    public void setMaxOutgoingLinksToFollow(int maxOutgoingLinksToFollow) {
-        this.maxOutgoingLinksToFollow = maxOutgoingLinksToFollow;
-    }
 
     public int getMaxDownloadSize() {
         return maxDownloadSize;
     }
 
-    /**
-     * @param maxDownloadSize Max allowed size of a page. Pages larger than this size will not be
-     * fetched.
-     */
-    public void setMaxDownloadSize(int maxDownloadSize) {
-        this.maxDownloadSize = maxDownloadSize;
-    }
 
     public boolean isFollowRedirects() {
         return followRedirects;
     }
 
-    /**
-     * @param followRedirects Should we follow redirects?
-     */
-    public void setFollowRedirects(boolean followRedirects) {
-        this.followRedirects = followRedirects;
-    }
 
     public boolean isShutdownOnEmptyQueue() {
         return shutdownOnEmptyQueue;
-    }
-
-    /**
-     * Should the crawler stop running when the queue is empty?
-     */
-    public void setShutdownOnEmptyQueue(boolean shutdown) {
-        shutdownOnEmptyQueue = shutdown;
-    }
-
-    public boolean isOnlineTldListUpdate() {
-        return onlineTldListUpdate;
-    }
-
-    /**
-     * Should the TLD list be updated automatically on each run? Alternatively,
-     * it can be loaded from the embedded tld-names.txt resource file that was
-     * obtained from https://publicsuffix.org/list/effective_tld_names.dat
-     */
-    public void setOnlineTldListUpdate(boolean online) {
-        onlineTldListUpdate = online;
     }
 
 
@@ -443,24 +286,13 @@ public class CrawlConfig {
         return threadMonitoringDelaySeconds;
     }
 
-    public void setThreadMonitoringDelaySeconds(int delay) {
-        this.threadMonitoringDelaySeconds = delay;
-    }
 
     public int getThreadShutdownDelaySeconds() {
         return threadShutdownDelaySeconds;
     }
 
-    public void setThreadShutdownDelaySeconds(int delay) {
-        this.threadShutdownDelaySeconds = delay;
-    }
-
     public int getCleanupDelaySeconds() {
         return cleanupDelaySeconds;
-    }
-
-    public void setCleanupDelaySeconds(int delay) {
-        this.cleanupDelaySeconds = delay;
     }
 
     @Override

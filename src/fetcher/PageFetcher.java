@@ -106,121 +106,15 @@ public class PageFetcher extends Configurable{
         clientBuilder.setUserAgent(config.getUserAgentString());
         clientBuilder.setDefaultHeaders(config.getDefaultHeaders());
 
-        /*
-        if (config.getProxyHost() != null) {
-            if (config.getProxyUsername() != null) {
-                BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-                credentialsProvider.setCredentials(
-                        new AuthScope(config.getProxyHost(), config.getProxyPort()),
-                        new UsernamePasswordCredentials(config.getProxyUsername(),
-                                config.getProxyPassword()));
-                clientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-            }
 
-            HttpHost proxy = new HttpHost(config.getProxyHost(), config.getProxyPort());
-            clientBuilder.setProxy(proxy);
-            logger.debug("Working through Proxy: {}", proxy.getHostName());
-        }
-        */
 
         httpClient = clientBuilder.build();
-        /*if ((config.getAuthInfos() != null) && !config.getAuthInfos().isEmpty()) {
-            doAuthetication(config.getAuthInfos());
-        }*/
-
         if (connectionMonitorThread == null) {
             connectionMonitorThread = new IdleConnectionMonitorThread(connectionManager);
         }
         connectionMonitorThread.start();
     }
 
-    /*private void doAuthetication(List<AuthInfo> authInfos) {
-        for (AuthInfo authInfo : authInfos) {
-            if (authInfo.getAuthenticationType() ==
-                    AuthInfo.AuthenticationType.BASIC_AUTHENTICATION) {
-                doBasicLogin((BasicAuthInfo) authInfo);
-            } else if (authInfo.getAuthenticationType() ==
-                    AuthInfo.AuthenticationType.NT_AUTHENTICATION) {
-                doNtLogin((NtAuthInfo) authInfo);
-            } else {
-                doFormLogin((FormAuthInfo) authInfo);
-            }
-        }
-    }*/
-
-    /**
-     * BASIC authentication<br/>
-     * Official Example: https://hc.apache
-     * .org/httpcomponents-client-ga/httpclient/examples/org/apache/http/examples
-     * /client/ClientAuthentication.java
-     * */
-    /*private void doBasicLogin(BasicAuthInfo authInfo) {
-        logger.info("BASIC authentication for: " + authInfo.getLoginTarget());
-        HttpHost targetHost =
-                new HttpHost(authInfo.getHost(), authInfo.getPort(), authInfo.getProtocol());
-        CredentialsProvider credsProvider = new BasicCredentialsProvider();
-        credsProvider.setCredentials(new AuthScope(targetHost.getHostName(), targetHost.getPort()),
-                new UsernamePasswordCredentials(authInfo.getUsername(),
-                        authInfo.getPassword()));
-        httpClient = HttpClients.custom().setDefaultCredentialsProvider(credsProvider).build();
-    }*/
-
-    /**
-     * Do NT auth for Microsoft AD sites.
-     */
-    /*private void doNtLogin(NtAuthInfo authInfo) {
-        logger.info("NT authentication for: " + authInfo.getLoginTarget());
-        HttpHost targetHost =
-                new HttpHost(authInfo.getHost(), authInfo.getPort(), authInfo.getProtocol());
-        CredentialsProvider credsProvider = new BasicCredentialsProvider();
-        try {
-            credsProvider.setCredentials(
-                    new AuthScope(targetHost.getHostName(), targetHost.getPort()),
-                    new NTCredentials(authInfo.getUsername(), authInfo.getPassword(),
-                            InetAddress.getLocalHost().getHostName(), authInfo.getDomain()));
-        } catch (UnknownHostException e) {
-            logger.error("Error creating NT credentials", e);
-        }
-        httpClient = HttpClients.custom().setDefaultCredentialsProvider(credsProvider).build();
-    }*/
-
-    /**
-     * FORM authentication<br/>
-     * Official Example:
-     *  https://hc.apache.org/httpcomponents-client-ga/httpclient/examples/org/apache/http
-     *  /examples/client/ClientFormLogin.java
-     */
-
-    /*
-    private void doFormLogin(FormAuthInfo authInfo) {
-        logger.info("FORM authentication for: " + authInfo.getLoginTarget());
-        String fullUri =
-                authInfo.getProtocol() + "://" + authInfo.getHost() + ":" + authInfo.getPort() +
-                        authInfo.getLoginTarget();
-        HttpPost httpPost = new HttpPost(fullUri);
-        List<NameValuePair> formParams = new ArrayList<>();
-        formParams.add(
-                new BasicNameValuePair(authInfo.getUsernameFormStr(), authInfo.getUsername()));
-        formParams.add(
-                new BasicNameValuePair(authInfo.getPasswordFormStr(), authInfo.getPassword()));
-
-        try {
-            UrlEncodedFormEntity entity = new UrlEncodedFormEntity(formParams, "UTF-8");
-            httpPost.setEntity(entity);
-            httpClient.execute(httpPost);
-            logger.debug("Successfully Logged in with user: " + authInfo.getUsername() + " to: " +
-                    authInfo.getHost());
-        } catch (UnsupportedEncodingException e) {
-            logger.error("Encountered a non supported encoding while trying to login to: " +
-                    authInfo.getHost(), e);
-        } catch (ClientProtocolException e) {
-            logger.error("While trying to login to: " + authInfo.getHost() +
-                    " - Client protocol not supported", e);
-        } catch (IOException e) {
-            logger.error(
-                    "While trying to login to: " + authInfo.getHost() + " - Error making request", e);
-        }
-    }*/
 
 
     //Connect to the page
@@ -249,23 +143,6 @@ public class PageFetcher extends Configurable{
             // Setting HttpStatus
             int statusCode = response.getStatusLine().getStatusCode();
 
-            // If Redirect ( 3xx )
-            /*
-            if (statusCode == HttpStatus.SC_MOVED_PERMANENTLY ||
-                    statusCode == HttpStatus.SC_MOVED_TEMPORARILY ||
-                    statusCode == HttpStatus.SC_MULTIPLE_CHOICES ||
-                    statusCode == HttpStatus.SC_SEE_OTHER ||
-                    statusCode == HttpStatus.SC_TEMPORARY_REDIRECT || statusCode ==
-                    308) { //todo follow
-                // https://issues.apache.org/jira/browse/HTTPCORE-389
-
-                Header header = response.getFirstHeader("Location");
-                if (header != null) {
-                    String movedToUrl =
-                            URLnormlization.getCanonicalURL(header.getValue(), toFetchURL);
-                    fetchResult.setMovedToUrl(movedToUrl);
-                }
-            } else */
             if (statusCode >= 200 && statusCode <= 299) { // is 2XX, everything looks ok
                 fetchResult.setFetchedUrl(toFetchURL);
                 String uri = request.getURI().toString();

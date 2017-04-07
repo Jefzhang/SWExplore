@@ -19,17 +19,6 @@ public class Page {
      * The URL of this page.
      */
     protected WebURL url;
-
-    /**
-     * Redirection flag
-     */
-    protected boolean redirect;
-
-    /**
-     * The URL to which this page will be redirected to
-     */
-    protected String redirectedToUrl;
-
     /**
      * Status of the page
      */
@@ -166,42 +155,11 @@ public class Page {
         return url;
     }
 
-    public void setWebURL(WebURL url) {
-        this.url = url;
-    }
-
-    public boolean isRedirect() {
-        return redirect;
-    }
-
-    public void setRedirect(boolean redirect) {
-        this.redirect = redirect;
-    }
-
-    public String getRedirectedToUrl() {
-        return redirectedToUrl;
-    }
-
-    public void setRedirectedToUrl(String redirectedToUrl) {
-        this.redirectedToUrl = redirectedToUrl;
-    }
-
-    public int getStatusCode() {
-        return statusCode;
-    }
 
     public void setStatusCode(int statusCode) {
         this.statusCode = statusCode;
     }
 
-    /**
-     * Returns headers which were present in the response of the fetch request
-     *
-     * @return Header Array, the response headers
-     */
-    public Header[] getFetchResponseHeaders() {
-        return fetchResponseHeaders;
-    }
 
     public void setFetchResponseHeaders(Header[] headers) {
         fetchResponseHeaders = headers;
@@ -230,30 +188,6 @@ public class Page {
     }
 
     /**
-     * @return ContentType of this page.
-     * For example: "text/html; charset=UTF-8"
-     */
-    public String getContentType() {
-        return contentType;
-    }
-
-    public void setContentType(String contentType) {
-        this.contentType = contentType;
-    }
-
-    /**
-     * @return encoding of the content.
-     * For example: "gzip"
-     */
-    public String getContentEncoding() {
-        return contentEncoding;
-    }
-
-    public void setContentEncoding(String contentEncoding) {
-        this.contentEncoding = contentEncoding;
-    }
-
-    /**
      * @return charset of the content.
      * For example: "UTF-8"
      */
@@ -265,16 +199,6 @@ public class Page {
         this.contentCharset = contentCharset;
     }
 
-    /**
-     * @return Language
-     */
-    public String getLanguage() {
-        return language;
-    }
-
-    public void setLanguage(String language) {
-        this.language = language;
-    }
 
     public boolean isTruncated() {
         return truncated;
